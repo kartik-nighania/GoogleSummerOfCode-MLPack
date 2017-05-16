@@ -20,21 +20,7 @@
 #include "neuro_cmaes.hpp"
 #include "neuron_gene.hpp"
 #include "genome.hpp"
-#include "parameters.hpp"
-#include "utils.hpp"
-#include "random.hpp" 
-
-
-/* #include <mlpack/methods/neuro_cmaes/neuro_cmaes.hpp>
-#include <mlpack/methods/neuro_cmaes/random.hpp>
-#include <mlpack/methods/neuro_cmaes/link_gene.hpp>
-#include <mlpack/methods/neuro_cmaes/neuron_gene.hpp>
-#include <mlpack/methods/neuro_cmaes/genome.hpp>
-#include <mlpack/methods/neuro_cmaes/parameters.hpp>
-#include <mlpack/methods/neuro_cmaes/utils.hpp>
-*/
-
-
+#include "parameters.hpp" 
 
 
 using namespace mlpack;
