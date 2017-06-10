@@ -7,6 +7,7 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+#include <iostream>
 
 namespace mlpack {
 namespace optimization {
