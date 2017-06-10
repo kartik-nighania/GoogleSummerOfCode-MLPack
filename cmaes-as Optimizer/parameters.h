@@ -1,4 +1,5 @@
-#pragma once
+#ifndef MLPACK_CORE_OPTIMIZERS_CMAES_PARAMETERS_HPP
+#define MLPACK_CORE_OPTIMIZERS_CMAES_PARAMETERS_HPP
 
 #include <cmath>
 #include <limits>
@@ -6,6 +7,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <string>
+
+namespace mlpack {
+namespace optimization {
 
 template<typename T> class CMAES;
 
@@ -164,22 +168,7 @@ public:
     return *this;
   }
 
-  /**
-   * @param dimension Dimension of the search space \f$N\f$. No default
-   *                  available, must be defined here or you have to set the
-   *                  member manually.
-   * @param inxstart Initial point in search space \f$x_0\f$, default (NULL) is
-   *                 \f$(0.5,\ldots,0.5)^T + N(0, initialStdDev^2) \in R^N\f$.
-   *                 This must be an array of size \f$N\f$.
-   * @param inrgsigma Coordinatewise initial standard deviation of the sample
-   *                  distribution (\f$\sigma \cdot \sqrt{C_{ii}} =
-   *                  initialStdDev[i]\f$). The expected initial distance
-   *                  between initialX and the optimum per coordinate should be
-   *                  roughly initialStdDev. The entries should not differ by
-   *                  several orders of magnitude. Default (NULL) is
-   *                  \f$(0.3,\ldots,0.3)^T \in R^N\f$. This must be an array of
-   *                  size \f$N\f$.
-   */
+
   void init(int dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0)
   {
     if(logWarnings)
@@ -420,3 +409,6 @@ private:
   }
 };
 
+}
+  }
+  #endif

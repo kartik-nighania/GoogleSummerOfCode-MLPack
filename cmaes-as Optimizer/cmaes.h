@@ -23,6 +23,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <string>
+#include <armadillo>
 
 //2 eigen values check for column values
 //index sort mabye we can use sort
@@ -37,67 +38,41 @@ class CMAES
 {
 public:
 
-//! get the axis ratio
-T axisRatio()
-{
- return maxElement(rgD, params.N) / minElement(rgD, params.N);
-};
-
-//! get the number of evaluations done till now
-T evaluation(){ return countevals; }
-
-//! get the fitness value
-T fitness(){ return functionValues[index[0]];}
-
-//! get the best fitness value ever obtained
-T fitnessBestEver(){ return xBestEver[params.N];}
-
-//! get the generation number
-T generation(){ return gen;}
-
-//! maximum number of functions to evolve
-T maxEvaluation(){ return params.stopMaxFunEvals;}
-
-//! maximum number of iterations to perform before ending
-T maxIteration(){ return std::ceil(params.stopMaxIter); }
-
-//! The maximum axis length of the normal distribution
-T maxAxisLength(){ return sigma*std::sqrt(maxEW);}
-
-//! The minimum axis length of the normal distribution hyper ellipsoid
-T minAxisLength(){ return sigma*std::sqrt(minEW); }
-
-T maxStdDev(){return sigma*std::sqrt(maxdiagC);}
-
-T minStdDev(){return sigma*std::sqrt(mindiagC);}
-
-T dimension(){return params.N;}
-
-T sampleSize(){return params.lambda;}
-
-T sigmaValue(){return sigma;}
-
-  T* diagonalCovariance()
+  /**
+   * Keys for get().
+   */
+  enum GetScalar
   {
-     for(int i = 0; i < params.N; ++i)
-          output[i] = C[i][i];
-        return output;
-  }
+    NoScalar = 0,
+    AxisRatio = 1,
+    Eval = 2, Evaluations = 2,
+    FctValue = 3, FuncValue = 3, FunValue = 3, Fitness = 3,
+    FBestEver = 4,
+    Generation = 5, Iteration = 5,
+    MaxEval = 6, MaxFunEvals = 6, StopMaxFunEvals = 6,
+    MaxGen = 7, MaxIter = 7, StopMaxIter = 7,
+    MaxAxisLength = 8,
+    MinAxisLength = 9,
+    MaxStdDev = 10,
+    MinStdDev = 11,
+    Dim = 12, Dimension = 12,
+    Lambda = 13, SampleSize = 13, PopSize = 13,
+    Sigma = 14
+  };
 
-  T* diagonalD(){ return rgD; }
-
-  T* standardDeviation()
+  /**
+   * Keys for getPtr()
+   */
+  enum GetVector
   {
-    for(int i = 0; i < params.N; ++i)
-          output[i] = sigma*std::sqrt(C[i][i]);
-        return output;
-  }
-
- T* XBestEver(){ return xBestEver;}
-
-T* XBest(){return population[index[0]];}
-
-T* XMean(){return xmean;}
+    NoVector = 0,
+    DiagC = 1,
+    DiagD = 2,
+    StdDev = 3,
+    XBestEver = 4,
+    XBest = 5,
+    XMean = 6
+  };
 
 private:
 
@@ -742,6 +717,113 @@ public:
     return xmean;
   }
 
+    /**
+   * Request a scalar parameter from CMA-ES.
+   * @param key Key of the requested scalar.
+   * @return The desired value.
+   */
+  T get(GetScalar key)
+  {
+    switch(key)
+    {
+      case AxisRatio:
+        return maxElement(rgD, params.N) / minElement(rgD, params.N);
+      case Eval:
+        return countevals;
+      case Fitness:
+        return functionValues[index[0]];
+      case FBestEver:
+        return xBestEver[params.N];
+      case Generation:
+        return gen;
+      case MaxEval:
+        return params.stopMaxFunEvals;
+      case MaxIter:
+        return std::ceil(params.stopMaxIter);
+      case MaxAxisLength:
+        return sigma*std::sqrt(maxEW);
+      case MinAxisLength:
+        return sigma*std::sqrt(minEW);
+      case MaxStdDev:
+        return sigma*std::sqrt(maxdiagC);
+      case MinStdDev:
+        return sigma*std::sqrt(mindiagC);
+      case Dimension:
+        return params.N;
+      case SampleSize:
+        return params.lambda;
+      case Sigma:
+        return sigma;
+      default:
+        throw std::runtime_error("get(): No match found for key");
+    }
+  }
+
+  /**
+   * Request a vector parameter from CMA-ES.
+   * @param key Key of the requested vector.
+   * @return Pointer to the desired value array. Its content might be
+   *         overwritten during the next call to any member functions other
+   *         than get().
+   */
+  const T* getPtr(GetVector key)
+  {
+    switch(key)
+    {
+      case DiagC:
+      {
+        for(int i = 0; i < params.N; ++i)
+          output[i] = C[i][i];
+        return output;
+      }
+      case DiagD:
+        return rgD;
+      case StdDev:
+      {
+        for(int i = 0; i < params.N; ++i)
+          output[i] = sigma*std::sqrt(C[i][i]);
+        return output;
+      }
+      case XBestEver:
+        return xBestEver;
+      case XBest:
+        return population[index[0]];
+      case XMean:
+        return xmean;
+      default:
+        throw std::runtime_error("getPtr(): No match found for key");
+    }
+  }
+
+  /**
+   * Request a vector parameter from CMA-ES.
+   * @param key Key of the requested vector.
+   * @return Pointer to the desired value array with unlimited reading and
+   *         writing access to its elements. The memory must be explicitly
+   *         released using delete[].
+   */
+  T* getNew(GetVector key)
+  {
+    return getInto(key, 0);
+  }
+
+  /**
+   * Request a vector parameter from CMA-ES.
+   * @param key Key of the requested vector.
+   * @param res Memory of size N == dimension, where the desired values are
+   *            written into. For mem == NULL new memory is allocated as with
+   *            calling getNew() and must be released by the user at some point.
+   */
+  T* getInto(GetVector key, T* res)
+  {
+    T const* res0 = getPtr(key);
+    if(!res)
+      res = new T[params.N];
+    for(int i = 0; i < params.N; ++i)
+      res[i] = res0[i];
+    return res;
+  }
+
   /**
    * Some stopping criteria can be set in initials.par, with names starting
    * with stop... Internal stopping criteria include a maximal condition number
@@ -890,8 +972,6 @@ public:
    */
   void updateEigensystem(bool force)
   {
-    eigenTimings.update();
-
     if(!force)
     {
       if(eigensysIsUptodate)
@@ -901,7 +981,7 @@ public:
         return;
     }
 
-    eigen(rgD, B, tempRandom);
+    eigen(rgD, B);
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
     minEW = minElement(rgD, params.N);
@@ -936,4 +1016,8 @@ public:
 
     return newxmean;
   }
-};
+}; //CLASS
+
+} //OPTIMIZER
+}
+#endif
