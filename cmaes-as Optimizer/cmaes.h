@@ -13,8 +13,6 @@
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 
 #include "parameters.h"
-#include "timings.h"
-#include "utils.h"
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -481,6 +479,16 @@ public:
     return publicFitness;
   }
 
+	T maxElement(const T* rgd, int len)
+	{
+	  return *std::max_element(rgd, rgd + len);
+	}
+
+	T minElement(const T* rgd, int len)
+	{
+	  return *std::min_element(rgd, rgd + len);
+	}
+
   /**
    * The search space vectors have a special form: they are arrays with N+1
    * entries. Entry number -1 is the dimension of the search space N.
@@ -500,8 +508,10 @@ public:
       {
         for(int i = 0; i < params.N; ++i)
           rgD[i] = std::sqrt(C[i][i]);
-        minEW = square(minElement(rgD, params.N));
-        maxEW = square(maxElement(rgD, params.N));
+        minEW = minElement(rgD, params.N);
+        minEW *= minEW;
+        maxEW = maxElement(rgD, params.N);
+        maxEW *= maxEW;
         eigensysIsUptodate = true;
       }
     }
@@ -889,16 +899,9 @@ public:
       // return on modulo generation number
       if(gen < genOfEigensysUpdate + params.updateCmode.modulo)
         return;
-      // return on time percentage
-      if(params.updateCmode.maxtime < 1.00
-          && eigenTimings.tictoctime > params.updateCmode.maxtime* eigenTimings.totaltime
-          && eigenTimings.tictoctime > 0.0002)
-        return;
     }
 
-    eigenTimings.tic();
     eigen(rgD, B, tempRandom);
-    eigenTimings.toc();
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
     minEW = minElement(rgD, params.N);
