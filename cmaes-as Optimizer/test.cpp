@@ -33,7 +33,7 @@ int main(int, char**)
 
   for(int i=0; i<dim; i++) xstart[i] = 0.5;
   double stddev[dim];
-  for(int i=0; i<dim; i++) stddev[i] = 2;
+  for(int i=0; i<dim; i++) stddev[i] = 0.5;
 
   Parameters<double> parameters;
 
