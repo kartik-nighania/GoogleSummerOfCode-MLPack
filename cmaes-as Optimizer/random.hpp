@@ -1,23 +1,42 @@
-#pragma once
+/**
+ * @file cmaes.h
+ * @author Kartik Nighania
+ *
+ * Covariance Matrix Adaptation Evolution Strategy
+ *
+ * mlpack is free software; you may redistribute it and/or modify it under the
+ * terms of the 3-clause BSD license.  You should have received a copy of the
+ * 3-clause BSD license along with mlpack.  If not, see
+ * http://www.opensource.org/licenses/BSD-3-Clause for more information.
+ */
 
+
+#ifndef MLPACK_CORE_OPTIMIZERS_CMAES_RANDOM_HPP
+#define MLPACK_CORE_OPTIMIZERS_CMAES_RANDOM_HPP
+
+#include <iostream>
 #include <ctime>
 #include <cmath>
 
 /**
  * @class Random
- * A pseudo random number generator.
+ * A simple random number generator from a normal distribution in the range [0,1]
  */
+
+namespace mlpack {
+namespace optimization {
+
 template<typename T>
-class Random
+class Random 
 {
   // variables for uniform()
   long int startseed;
   long int aktseed;
   long int aktrand;
   long int rgrand[32];
-  // variables for gauss()
   bool stored;
   T hold;
+
 public:
   /**
    * @param seed use clock if 0
@@ -32,9 +51,7 @@ public:
     }
     start(seed);
   }
-  /**
-   * @param seed 0 == 1
-   */
+  
   void start(long unsigned seed)
   {
     stored = false;
@@ -50,8 +67,9 @@ public:
     }
     aktrand = rgrand[0];
   }
+
   /**
-   * @return (0,1)-normally distributed random number
+   * @return (0,1)-normally distributed random number 
    */
   T gauss(void)
   {
@@ -87,3 +105,6 @@ public:
   }
 };
 
+} //cmaes
+} // optimizer
+#endif

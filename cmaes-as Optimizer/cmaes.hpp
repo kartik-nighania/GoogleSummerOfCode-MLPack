@@ -1028,6 +1028,6 @@ public:
   }
 }; //CLASS
 
-} //OPTIMIZER
-}
+} //cmaes
+} // optimizer
 #endif
