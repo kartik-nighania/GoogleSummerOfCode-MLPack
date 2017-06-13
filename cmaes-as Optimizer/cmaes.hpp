@@ -450,9 +450,9 @@ public:
     maxEW = maxEW*maxEW;
 
     maxdiagC = C[0][0];
-    for (int i = 1; i < params.N; ++i) if(maxdiagC < C[i][i]) maxdiagC = C[i][i];
+    for (int i = 1; i < params.N; ++i) if (maxdiagC < C[i][i]) maxdiagC = C[i][i];
     mindiagC = C[0][0];
-    for (int i = 1; i < params.N; ++i) if(mindiagC > C[i][i]) mindiagC = C[i][i];
+    for (int i = 1; i < params.N; ++i) if (mindiagC > C[i][i]) mindiagC = C[i][i];
 
     for (int i = 0; i < params.N; ++i)
       xmean[i] = xold[i] = params.xstart[i];
@@ -714,7 +714,7 @@ public:
         / chiN < T(1.4) + T(2) / (N + 1);
     const T ccumcovinv = 1.-params.ccumcov;
     const T hsigFactor = hsig*std::sqrt(params.ccumcov*(T(2)-params.ccumcov));
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       pc[i] = ccumcovinv*pc[i] + hsigFactor*BDz[i];
 
     // update of C
