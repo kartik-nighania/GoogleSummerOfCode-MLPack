@@ -92,96 +92,89 @@ public:
   }
 
   //! User defined termination criterias 
-  
-
-  //GETTER AND SETTERS 
-  void assign(const Parameters& p)
+    void stopMaxFuncEvaluations(T evaluations)
   {
-  
-
-    if (typicalX)
-      delete[] typicalX;
-    if (p.typicalX)
-    {
-      typicalX = new T[N];
-      for (int i = 0; i < N; i++)
-        typicalX[i] = p.typicalX[i];
-    }
-
-    typicalXcase = p.typicalXcase;
-
-    if (rgInitialStds)
-      delete[] rgInitialStds;
-    if (p.rgInitialStds)
-    {
-      rgInitialStds = new T[N];
-      for (int i = 0; i < N; i++)
-        rgInitialStds[i] = p.rgInitialStds[i];
-    }
-
-    if (rgDiffMinChange)
-      delete[] rgDiffMinChange;
-    if (p.rgDiffMinChange)
-    {
-      rgDiffMinChange = new T[N];
-      for (int i = 0; i < N; i++)
-        rgDiffMinChange[i] = p.rgDiffMinChange[i];
-    }
-
-    stopMaxFunEvals = p.stopMaxFunEvals;
-    facmaxeval = p.facmaxeval;
-    stopMaxIter = p.stopMaxIter;
-
-    stopTolFun = p.stopTolFun;
-    stopTolFunHist = p.stopTolFunHist;
-    stopTolX = p.stopTolX;
-    stopTolUpXFactor = p.stopTolUpXFactor;
-
-    lambda = p.lambda;
-    mu = p.mu;
-    mucov = p.mucov;
-    mueff = p.mueff;
-    damps = p.damps;
-    cs = p.cs;
-    ccumcov = p.ccumcov;
-    ccov = p.ccov;
-    diagonalCov = p.diagonalCov;
-
-    updateCmode.modulo = p.updateCmode.modulo;
-    updateCmode.maxtime = p.updateCmode.maxtime;
-
-    facupdateCmode = p.facupdateCmode;
-
-    weightMode = p.weightMode;
+     stopMaxFunEvals = evaluations;
   }
 
-       //N(-1),
-       // xstart(0),
-       // typicalX(0),
-        //typicalXcase(false),
-        //rgInitialStds(0),
-       // rgDiffMinChange(0),
-        //stopMaxFunEvals(-1),
-       // facmaxeval(1.0),
-       // stopMaxIter(-1.0),
-        //stopTolFun(1e-12),
-        //stopTolFunHist(1e-13),
-        //stopTolX(0), // 1e-11*insigma would also be reasonable
-       // stopTolUpXFactor(1e3),
-        //lambda(-1),
-        //mu(-1),
-        //mucov(-1),
-        //mueff(-1),
-        //weights(0),
-        //damps(-1),
-        //cs(-1),
-        //ccumcov(-1),
-        //ccov(-1),
-       // facupdateCmode(1),
-       // weightMode(UNINITIALIZED_WEIGHTS)
-       // updateCmode.modulo = -1;
-      // updateCmode.maxtime = -1;
+  T getStopMaxFuncEvaluations(void)
+  {
+    return  stopMaxFunEvals;
+  }
 
+  void stopMaxIterations(T iterations)
+  {
+    stopMaxIter = iterations;
+  }
+
+  T getStopMaxIterations(void)
+  {
+    return stopMaxIter;
+  }
+
+
+  void stopMinFuntionDifference(T difference)
+  {
+    stopTolFun = difference;
+  }
+
+  T getStopMinFunctionDifference(void)
+  {
+    return stopTolFun;
+  }
+
+void stopMinFuntionHistoryDifference(T difference)
+  {
+    stopTolFunHist = difference;
+  }
+
+  T getStopMinFunctionHistoryDifference(void)
+  {
+    return stopTolFunHist;
+  }
+
+
+  void stopMinStepSize(T size)
+  {
+    stopTolX = size;
+  }
+
+  T getStopMinStepSize(void)
+  {
+    return stopTolX;
+  }
+
+  //! other variable parameters
+
+  void lambda(T l)
+  {
+    lambda = l;
+  }
+
+  T getLambda(void)
+  {
+    return lambda;
+  }
+
+  void mu(T ind)
+  {
+    mu = ind;
+  }
+
+  T getMu(void)
+  {
+    return mu;
+  }
+
+  void muEffective(T ind)
+  {
+    mueff = ind;
+  }
+
+  T getMuEffective(void)
+  {
+    return mueff;
+  }
 
   ~CMAES()
   {
@@ -296,28 +289,6 @@ private:
   //! Initial standard deviations.
   T* rgInitialStds;
   T* rgDiffMinChange;
-
-  void stopMaxFuncEvaluations(T evaluations)
-  {
-     stopMaxFunEvals = evaluations;
-  }
-
-  T getStopMaxFuncEvaluations(void)
-  {
-    return  stopMaxFunEvals;
-  }
-
-    void stopMaxIterations(T iterations)
-  {
-    stopMaxIter = iterations;
-  }
-
-  T getStopMaxIterations(void)
-  {
-    return stopMaxIter;
-  }
-
-  
 
   /* Termination parameters. */
   //! Maximal number of objective function evaluations.
