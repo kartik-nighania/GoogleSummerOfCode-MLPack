@@ -1,0 +1,5 @@
+init will now be the constructor returning nothing and will copy all the values of xstart and stddiv and dimension along with it see that the 
+defaults can be given as parameters or not by the user like number of evals, min values before terminate etc etc as done by Ryans class and then to modify them 
+the get key and the values of defaults are wrong.. remove them carefully
+then the init giving population back should be given to an optmize name function which will use the numFunction the eVAluate which is done in the test code with name fitness_Func given to population only to be done inside the optimize function only to be done inside that only should itself calculate it evaluate function has to be called then the return final of xfinal to be given back in Optimize(mat iterate) the iterate function which will have the new 
+values  which the user will get  fiunal
