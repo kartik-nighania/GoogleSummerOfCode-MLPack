@@ -445,12 +445,13 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
     }
   }
 
-	T maxElement(const T* rgd, int len)
+template<typename funcType, typename T>
+	T CMAES<funcType, T>::maxElement(const T* rgd, int len)
 	{
 	  return *std::max_element(rgd, rgd + len);
 	}
-
-	T minElement(const T* rgd, int len)
+template<typename funcType, typename T>
+  T CMAES<funcType, T>::minElement(const T* rgd, int len)
 	{
 	  return *std::min_element(rgd, rgd + len);
 	}
@@ -461,7 +462,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    * @return A pointer to a "population" of lambda N-dimensional multivariate
    * normally distributed samples.
    */
-  T* const* samplePopulation()
+  template<typename funcType, typename T>
+  T* const* CMAES<funcType, T>::samplePopulation()
   {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
@@ -518,7 +520,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    *          must hold.
    * @return A pointer to the resampled "population".
    */
-  T* const* reSampleSingle(int i)
+  template<typename funcType, typename T>
+  T* const* CMAES<funcType, T>::reSampleSingle(int i)
   {
     T* x;
     assert(i >= 0 && i <lambda &&
@@ -542,7 +545,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    * @return A pointer to the resampled solution vector, equals input x for
    *         x != NULL on input.
    */
-  T* sampleSingleInto(T* x)
+  template<typename funcType, typename T>
+  T* CMAES<funcType, T>::sampleSingleInto(T* x)
   {
     if (!x)
       x = new T[N];
@@ -559,7 +563,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    *          sampled a new value.
    * @return A pointer to the resampled "population" member.
    */
-  T const* reSampleSingleOld(T* x)
+  template<typename funcType, typename T>
+  T const* CMAES<funcType, T>::reSampleSingleOld(T* x)
   {
     assert(x && "reSampleSingleOld(): Missing input x");
     addMutation(x);
@@ -579,7 +584,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    * @return A pointer to the perturbed solution vector, equals input x for
    *         x != NULL.
    */
-  T* perturbSolutionInto(T* x, T const* pxmean, T eps)
+  template<typename funcType, typename T>
+  T* CMAES<funcType, T>::perturbSolutionInto(T* x, T const* pxmean, T eps)
   {
     if (!x)
       x = new T[N];
@@ -595,7 +601,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    * @param fitnessValues An array of \f$\lambda\f$ function values.
    * @return Mean value of the new distribution.
    */
-  T* updateDistribution(const T* fitnessValues)
+  template<typename funcType, typename T>
+  T* CMAES<funcType, T>::updateDistribution(const T* fitnessValues)
   {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
@@ -715,7 +722,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    * that contains the matched stop criteria via getStopMessage().
    * @return Does any stop criterion match?
    */
-  bool testForTermination()
+  template<typename funcType, typename T>
+  bool CMAES<funcType, T>::testForTermination()
   {
     T range, fac;
     int iAchse, iKoo;
@@ -837,23 +845,15 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
   }
 
   /**
-   * A message that contains a detailed description of the matched stop
-   * criteria.
-   */
-  std::string getStopMessage()
-  {
-    return stopMessage;
-  }
-
-
-  /**
    * Conducts the eigendecomposition of C into B and D such that
    * \f$C = B \cdot D \cdot D \cdot B^T\f$ and \f$B \cdot B^T = I\f$
    * and D diagonal and positive.
    * @param force For force == true the eigendecomposion is conducted even if
    *              eigenvector and values seem to be up to date.
    */
-  void updateEigensystem(bool force)
+
+   template<typename funcType, typename T>
+  void CMAES<funcType, T>::updateEigensystem(bool force)
   {
     if (!force)
     {
@@ -886,7 +886,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    * @param newxmean new mean, if it is NULL, it will be set to the current mean
    * @return new mean
    */
-  T const* setMean(const T* newxmean)
+   template<typename funcType, typename T>
+  T const* CMAES<funcType, T>::setMean(const T* newxmean)
   {
     assert(state != SAMPLED && "setMean: mean cannot be set inbetween the calls"
         "of samplePopulation and updateDistribution");

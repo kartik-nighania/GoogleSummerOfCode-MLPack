@@ -113,6 +113,12 @@ void stopMinFuntionHistoryDifference(T difference)
     return stopTolX;
   }
 
+/**
+   * A message that contains a detailed description of the matched stop
+   * criteria.
+   */
+  std::string getStopMessage(){return stopMessage;}
+
   //! other variable parameters
 
   void sampleSize(T l){lambda = l;}
