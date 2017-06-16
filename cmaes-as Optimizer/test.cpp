@@ -36,33 +36,33 @@ int main(int, char**)
   double stddev[dim];
   for (int i=0; i<dim; i++) stddev[i] = 0.5;
 
-  Parameters<double> parameters;
+ // Parameters<double> parameters;
 
-  parameters.init(dim, xstart, stddev);
+ // parameters.init(dim, xstart, stddev);
 
-  arFunvals = evo.init(parameters);
+ // arFunvals = evo.init(parameters);
 
   while (!evo.testForTermination())
   {
     // Generate lambda new search points, sample population
-    pop = evo.samplePopulation();
+   // pop = evo.samplePopulation();
 
     // evaluate the new search points using fitfun from above
-    for (int i = 0; i < evo.get(CMAES<double>::Lambda); ++i)
-      arFunvals[i] = fitfun(pop[i], (int) evo.get(CMAES<double>::Dimension));
+  // for (int i = 0; i < evo.get(CMAES<double>::Lambda); ++i)
+   //   arFunvals[i] = fitfun(pop[i], (int) evo.get(CMAES<double>::Dimension));
 
     // update the search distribution used for sampleDistribution()
-    evo.updateDistribution(arFunvals);
+   // evo.updateDistribution(arFunvals);
   }
 
-  std::cout << "Stop:" << std::endl << evo.getStopMessage();
+  //std::cout << "Stop:" << std::endl << evo.getStopMessage();
 
   // get best estimator for the optimum
-  xfinal = evo.getNew(CMAES<double>::XMean);
+ //xfinal = evo.getNew(CMAES<double>::XMean);
 
-  std::cout << "value for x = " << *xfinal << " value for y = " << *(xfinal+1) << std::endl;
+//  std::cout << "value for x = " << *xfinal << " value for y = " << *(xfinal+1) << std::endl;
 
-  delete[] xfinal;
+  //delete[] xfinal;
 
   return 0;
 }

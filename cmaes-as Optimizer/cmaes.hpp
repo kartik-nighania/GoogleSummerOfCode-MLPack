@@ -121,17 +121,17 @@ void stopMinFuntionHistoryDifference(T difference)
 
   //! other variable parameters
 
-  void sampleSize(T l){lambda = l;}
+void sampleSize(T l){lambda = l;}
 
-  T getSampleSize(void){ return lambda; }
+T getSampleSize(void){ return lambda; }
 
-  void mu(T ind){ mu = ind;}
+void mu(T ind){ mu = ind;}
 
-  T getMu(void){ return mu;}
+T getMu(void){ return mu;}
 
-  void muEffective(T ind){ mueff = ind;}
+void muEffective(T ind){ mueff = ind;}
 
-  T getMuEffective(void){ return mueff;}
+T getMuEffective(void){ return mueff;}
 
 T axisRatio() { return maxElement(rgD,N) / minElement(rgD,N);};
 
@@ -164,7 +164,7 @@ void diagonalCovariance(T *arr, size_t N)
     for(int i = 0; i < N; ++i) arr[i] = sigma*std::sqrt(C[i][i]);
   }
 
-void XMean(T arr*, size_t N){ for(int i=0; i<N; i++) arr[i] = xmean[i]; }
+void XMean(T *arr, size_t N){ for(int i=0; i<N; i++) arr[i] = xmean[i]; }
 
   ~CMAES()
   {
@@ -218,8 +218,29 @@ void adaptC2(const int hsig);
 
 void testMinStdDevs(void);
 
- void addMutation(T* x, T eps = 1.0);
+void addMutation(T* x, T eps = 1.0);
 
+ T maxElement(const T* rgd, int len);
+
+ T minElement(const T* rgd, int len);
+
+ T* const* samplePopulation(void);
+
+ T* const* reSampleSingle(int i);
+
+ T* sampleSingleInto(T* x);
+
+ T const* reSampleSingleOld(T* x);
+
+ T* perturbSolutionInto(T* x, T const* pxmean, T eps);
+
+ T* updateDistribution(const T* fitnessValues);
+
+ bool testForTermination(void);
+
+ void updateEigensystem(bool force);
+
+ T const* setMean(const T* newxmean);
 
   //! Problem dimension, must stay constant. 
   int N;

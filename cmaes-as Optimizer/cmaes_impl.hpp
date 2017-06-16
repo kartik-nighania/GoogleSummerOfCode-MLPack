@@ -12,8 +12,6 @@
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 
-#include "parameters.hpp"
-#include "random.hpp"
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -28,6 +26,7 @@
 #include <iostream>
 
 #include "cmaes.hpp"
+#include "random.hpp"
 
 //2 eigen values check for column values
 //index sort mabye we can use sort
@@ -46,10 +45,8 @@
 namespace mlpack {
 namespace optimization {
 
-public:
-
-
-  void CMAES::setWeights(Weights mode)
+template<typename funcType, typename T>   
+void CMAES<funcType,T> setWeights(Weights mode)
   {
     //if called later delete the existing ones
     delete[] weights;
@@ -900,8 +897,8 @@ template<typename funcType, typename T>
 
     return newxmean;
   }
- //CLASS
 
 } //namespace optimizer
-} // Namespace cmaes
+} //namespace cmaes
+
 #endif
