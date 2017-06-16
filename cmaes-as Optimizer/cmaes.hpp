@@ -37,7 +37,8 @@ public:
   //! constructor to initialize the algorithm parameters
     CMAES(funcType func, size_t dimension, T *start, T *stdDeviation)
   {
-    int(dimension, start, stdDeviation);
+    double fitToFind[dimension];
+    int(dimension, start, stdDeviation, fitToFind);
   }
 
 
@@ -171,6 +172,30 @@ void XMean(T arr*, size_t N){ for(int i=0; i<N; i++) arr[i] = xmean[i]; }
       delete[] rgDiffMinChange;
     if (weights)
       delete[] weights;
+
+    delete[] pc;
+    delete[] ps;
+    delete[] tempRandom;
+    delete[] BDz;
+    delete[] --xmean;
+    delete[] --xold;
+    delete[] --xBestEver;
+    delete[] --output;
+    delete[] rgD;
+    for(int i = 0; i < N; ++i)
+    {
+      delete[] C[i];
+      delete[] B[i];
+    }
+    for(int i = 0; i < lambda; ++i)
+      delete[] --population[i];
+    delete[] population;
+    delete[] C;
+    delete[] B;
+    delete[] index;
+    delete[] publicFitness;
+    delete[] --functionValues;
+    delete[] --funcValueHistory;
   }
 
 private:

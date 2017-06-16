@@ -86,7 +86,7 @@ public:
   }
 
   template<typename funcType, typename T>
-  void CMAES<funcType,T>::init(int dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0)
+  void CMAES<funcType,T>::init(int dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0, double *arr)
   {
     
       if (!inxstart)
@@ -170,6 +170,114 @@ public:
       stopTolX = 0;
       stopTolUpXFactor = 1e3;
 
+    stopMessage = "";
+
+    T trace(0);
+    for (int i = 0; i <N; ++i)
+      trace += rgInitialStds[i]*rgInitialStds[i];
+    sigma = std::sqrt(trace/N);
+
+    chiN = std::sqrt((T)N) * (T(1) - T(1)/(T(4)*N) + T(1)/(T(21)*N*N));
+    eigensysIsUptodate = true;
+    doCheckEigen = false;
+    genOfEigensysUpdate = 0;
+
+    T dtest;
+    for (dtest = T(1); dtest && dtest < T(1.1)*dtest; dtest *= T(2))
+      if (dtest == dtest + T(1))
+        break;
+    dMaxSignifKond = dtest / T(1000);
+
+    gen = 0;
+    countevals = 0;
+    state = INITIALIZED;
+    dLastMinEWgroesserNull = T(1);
+
+    pc = new T[N];
+    ps = new T[N];
+    tempRandom = new T[N+1];
+    BDz = new T[N];
+    xmean = new T[N+2];
+    xmean[0] =N;
+    ++xmean;
+    xold = new T[N+2];
+    xold[0] = N;
+    ++xold;
+    xBestEver = new T[N+3];
+    xBestEver[0] = N;
+    ++xBestEver;
+    xBestEver[N] = std::numeric_limits<T>::max();
+    output = new T[N+2];
+    output[0] = N;
+    ++output;
+    rgD = new T[N];
+    C = new T*[N];
+    B = new T*[N];
+    publicFitness = new T[lambda];
+    functionValues = new T[lambda+1];
+    functionValues[0] = lambda;
+    ++functionValues;
+    const int historySize = 10 + (int) ceil(3.*10.*N/lambda);
+    funcValueHistory = new T[historySize + 1];
+    funcValueHistory[0] = (T) historySize;
+    funcValueHistory++;
+
+    for (int i = 0; i <N; ++i)
+    {
+      C[i] = new T[i+1];
+      B[i] = new T[N];
+    }
+    index = new int[lambda];
+    for (int i = 0; i <lambda; ++i)
+        index[i] = i;
+    population = new T*[lambda];
+    for (int i = 0; i <lambda; ++i)
+    {
+      population[i] = new T[N+2];
+      population[i][0] = N;
+      population[i]++;
+      for (int j = 0; j <N; j++)
+        population[i][j] = 0.0;
+    }
+
+    for (int i = 0; i <lambda; i++)
+    {
+      functionValues[i] = std::numeric_limits<T>::max();
+    }
+    for (int i = 0; i < historySize; i++)
+    {
+      funcValueHistory[i] = std::numeric_limits<T>::max();
+    }
+    for (int i = 0; i <N; ++i)
+      for (int j = 0; j < i; ++j)
+        C[i][j] = B[i][j] = B[j][i] = 0.;
+
+    for (int i = 0; i <N; ++i)
+    {
+      B[i][i] = T(1);
+      C[i][i] = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
+      C[i][i] *= C[i][i];
+      pc[i] = ps[i] = T(0);
+    }
+    minEW = minElement(rgD,N);
+    minEW = minEW*minEW;
+    maxEW = maxElement(rgD,N);
+    maxEW = maxEW*maxEW;
+
+    maxdiagC = C[0][0];
+    for (int i = 1; i < N; ++i) if (maxdiagC < C[i][i]) maxdiagC = C[i][i];
+    mindiagC = C[0][0];
+    for (int i = 1; i < N; ++i) if (mindiagC > C[i][i]) mindiagC = C[i][i];
+
+    for (int i = 0; i <N; ++i)
+      xmean[i] = xold[i] = xstart[i];
+    
+    if (typicalXcase)
+      for (int i = 0; i < N; ++i)
+        xmean[i] += sigma*rgD[i]*rand.gauss();
+
+    for(int i=0; i<N; i++) arr[i] = publicFitness[i];
+  
   }
 
  
@@ -337,160 +445,6 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
     }
   }
 
-
-  /**
-   * Free the memory.
-   */
-  ~CMAES()
-  {
-    delete[] pc;
-    delete[] ps;
-    delete[] tempRandom;
-    delete[] BDz;
-    delete[] --xmean;
-    delete[] --xold;
-    delete[] --xBestEver;
-    delete[] --output;
-    delete[] rgD;
-    for(int i = 0; i < N; ++i)
-    {
-      delete[] C[i];
-      delete[] B[i];
-    }
-    for(int i = 0; i < lambda; ++i)
-      delete[] --population[i];
-    delete[] population;
-    delete[] C;
-    delete[] B;
-    delete[] index;
-    delete[] publicFitness;
-    delete[] --functionValues;
-    delete[] --funcValueHistory;
-  }
-
-  /**
-   * Initializes the CMA-ES algorithm.
-   * @param parameters The CMA-ES parameters in the parameters.h file
-   * @return Array of size lambda that can be used to assign fitness values and
-   *         pass them to updateDistribution()
-   */
-  //INIT GETS MIXED 
-  //SEE WHERE IT GOES AND RESOLVE THE ISSUE
-  //FIND ABOUT FRIEND CLASSES 
-
-  T* init(const Parameters<T>& parameters)
-  {
-    params = parameters;
-
-    stopMessage = "";
-
-    T trace(0);
-    for (int i = 0; i < params.N; ++i)
-      trace += params.rgInitialStds[i]*params.rgInitialStds[i];
-    sigma = std::sqrt(trace/params.N);
-
-    chiN = std::sqrt((T) params.N) * (T(1) - T(1)/(T(4)*params.N) + T(1)/(T(21)*params.N*params.N));
-    eigensysIsUptodate = true;
-    doCheckEigen = false;
-    genOfEigensysUpdate = 0;
-
-    T dtest;
-    for (dtest = T(1); dtest && dtest < T(1.1)*dtest; dtest *= T(2))
-      if (dtest == dtest + T(1))
-        break;
-    dMaxSignifKond = dtest / T(1000);
-
-    gen = 0;
-    countevals = 0;
-    state = INITIALIZED;
-    dLastMinEWgroesserNull = T(1);
-
-    pc = new T[params.N];
-    ps = new T[params.N];
-    tempRandom = new T[params.N+1];
-    BDz = new T[params.N];
-    xmean = new T[params.N+2];
-    xmean[0] = params.N;
-    ++xmean;
-    xold = new T[params.N+2];
-    xold[0] = params.N;
-    ++xold;
-    xBestEver = new T[params.N+3];
-    xBestEver[0] = params.N;
-    ++xBestEver;
-    xBestEver[params.N] = std::numeric_limits<T>::max();
-    output = new T[params.N+2];
-    output[0] = params.N;
-    ++output;
-    rgD = new T[params.N];
-    C = new T*[params.N];
-    B = new T*[params.N];
-    publicFitness = new T[params.lambda];
-    functionValues = new T[params.lambda+1];
-    functionValues[0] = params.lambda;
-    ++functionValues;
-    const int historySize = 10 + (int) ceil(3.*10.*params.N/params.lambda);
-    funcValueHistory = new T[historySize + 1];
-    funcValueHistory[0] = (T) historySize;
-    funcValueHistory++;
-
-    for (int i = 0; i < params.N; ++i)
-    {
-      C[i] = new T[i+1];
-      B[i] = new T[params.N];
-    }
-    index = new int[params.lambda];
-    for (int i = 0; i < params.lambda; ++i)
-        index[i] = i;
-    population = new T*[params.lambda];
-    for (int i = 0; i < params.lambda; ++i)
-    {
-      population[i] = new T[params.N+2];
-      population[i][0] = params.N;
-      population[i]++;
-      for (int j = 0; j < params.N; j++)
-        population[i][j] = 0.0;
-    }
-
-    for (int i = 0; i < params.lambda; i++)
-    {
-      functionValues[i] = std::numeric_limits<T>::max();
-    }
-    for (int i = 0; i < historySize; i++)
-    {
-      funcValueHistory[i] = std::numeric_limits<T>::max();
-    }
-    for (int i = 0; i < params.N; ++i)
-      for (int j = 0; j < i; ++j)
-        C[i][j] = B[i][j] = B[j][i] = 0.;
-
-    for (int i = 0; i < params.N; ++i)
-    {
-      B[i][i] = T(1);
-      C[i][i] = rgD[i] = params.rgInitialStds[i]*std::sqrt(params.N/trace);
-      C[i][i] *= C[i][i];
-      pc[i] = ps[i] = T(0);
-    }
-    minEW = minElement(rgD, params.N);
-    minEW = minEW*minEW;
-    maxEW = maxElement(rgD, params.N);
-    maxEW = maxEW*maxEW;
-
-    maxdiagC = C[0][0];
-    for (int i = 1; i < params.N; ++i) if (maxdiagC < C[i][i]) maxdiagC = C[i][i];
-    mindiagC = C[0][0];
-    for (int i = 1; i < params.N; ++i) if (mindiagC > C[i][i]) mindiagC = C[i][i];
-
-    for (int i = 0; i < params.N; ++i)
-      xmean[i] = xold[i] = params.xstart[i];
-    
-    if (params.typicalXcase)
-      for (int i = 0; i < params.N; ++i)
-        xmean[i] += sigma*rgD[i]*rand.gauss();
-
-    return publicFitness;
-  }
-
 	T maxElement(const T* rgd, int len)
 	{
 	  return *std::max_element(rgd, rgd + len);
@@ -509,7 +463,7 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    */
   T* const* samplePopulation()
   {
-    bool diag = params.diagonalCov == 1 || params.diagonalCov >= gen;
+    bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
     // calculate eigensystem
     if (!eigensysIsUptodate)
@@ -518,11 +472,11 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
         updateEigensystem(false);
       else
       {
-        for (int i = 0; i < params.N; ++i)
+        for (int i = 0; i < N; ++i)
           rgD[i] = std::sqrt(C[i][i]);
-        minEW = minElement(rgD, params.N);
+        minEW = minElement(rgD, N);
         minEW *= minEW;
-        maxEW = maxElement(rgD, params.N);
+        maxEW = maxElement(rgD, N);
         maxEW *= maxEW;
         eigensysIsUptodate = true;
       }
@@ -530,19 +484,19 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
 
     testMinStdDevs();
 
-    for (int iNk = 0; iNk < params.lambda; ++iNk)
+    for (int iNk = 0; iNk <lambda; ++iNk)
     { // generate scaled random vector D*z
       T* rgrgxink = population[iNk];
-      for (int i = 0; i < params.N; ++i)
+      for (int i = 0; i < N; ++i)
         if (diag)
           rgrgxink[i] = xmean[i] + sigma*rgD[i]*rand.gauss();
         else
           tempRandom[i] = rgD[i]*rand.gauss();
       if (!diag)
-        for (int i = 0; i < params.N; ++i) // add mutation sigma*B*(D*z)
+        for (int i = 0; i < N; ++i) // add mutation sigma*B*(D*z)
         {
           T sum = 0.0;
-          for (int j = 0; j < params.N; ++j)
+          for (int j = 0; j < N; ++j)
             sum += B[i][j]*tempRandom[j];
           rgrgxink[i] = xmean[i] + sigma*sum;
         }
@@ -567,7 +521,7 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
   T* const* reSampleSingle(int i)
   {
     T* x;
-    assert(i >= 0 && i < params.lambda &&
+    assert(i >= 0 && i <lambda &&
         "reSampleSingle(): index must be between 0 and sp.lambda");
     x = population[i];
     addMutation(x);
@@ -591,7 +545,7 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
   T* sampleSingleInto(T* x)
   {
     if (!x)
-      x = new T[params.N];
+      x = new T[N];
     addMutation(x);
     return x;
   }
@@ -628,7 +582,7 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
   T* perturbSolutionInto(T* x, T const* pxmean, T eps)
   {
     if (!x)
-      x = new T[params.N];
+      x = new T[N];
     assert(pxmean && "perturbSolutionInto(): pxmean was not given");
     addMutation(x, eps);
     return x;
@@ -643,28 +597,27 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    */
   T* updateDistribution(const T* fitnessValues)
   {
-    const int N = params.N;
-    bool diag = params.diagonalCov == 1 || params.diagonalCov >= gen;
+    bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
     assert(state != UPDATED && "updateDistribution(): You need to call "
           "samplePopulation() before update can take place.");
     assert(fitnessValues && "updateDistribution(): No fitness function value array input.");
 
     if (state == SAMPLED) // function values are delivered here
-      countevals += params.lambda;
+      countevals += lambda;
     else std::cout<<  "updateDistribution(): unexpected state" << std::endl;
 
     // assign function values
-    for (int i = 0; i < params.lambda; ++i)
+    for (int i = 0; i < lambda; ++i)
       population[i][N] = functionValues[i] = fitnessValues[i];
 
     // Generate index
-    sortIndex(fitnessValues, index, params.lambda);
+    sortIndex(fitnessValues, index,lambda);
 
     // Test if function values are identical, escape flat fitness
-    if (fitnessValues[index[0]] == fitnessValues[index[(int) params.lambda / 2]])
+    if (fitnessValues[index[0]] == fitnessValues[index[(int) lambda / 2]])
     {
-      sigma *= std::exp(T(0.2) + params.cs / params.damps);
+      sigma *= std::exp(T(0.2) + cs / damps);
      
         std::cout << "Warning: sigma increased due to equal function values"
          << std::endl << "   Reconsider the formulation of the objective function";
@@ -684,14 +637,14 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
         xBestEver[N+1] = countevals;
       }
 
-    const T sqrtmueffdivsigma = std::sqrt(params.mueff) / sigma;
+    const T sqrtmueffdivsigma = std::sqrt(mueff) / sigma;
     // calculate xmean and rgBDz~N(0,C)
     for (int i = 0; i < N; ++i)
     {
       xold[i] = xmean[i];
       xmean[i] = 0.;
-      for (int iNk = 0; iNk < params.mu; ++iNk)
-        xmean[i] += params.weights[iNk]*population[index[iNk]][i];
+      for (int iNk = 0; iNk < mu; ++iNk)
+        xmean[i] += weights[iNk]*population[index[iNk]][i];
       BDz[i] = sqrtmueffdivsigma*(xmean[i]-xold[i]);
     }
 
@@ -711,8 +664,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
     }
 
     // cumulation for sigma (ps) using B*z
-    const T sqrtFactor = std::sqrt(params.cs*(T(2)-params.cs));
-    const T invps = T(1)-params.cs;
+    const T sqrtFactor = std::sqrt(cs*(T(2)-cs));
+    const T invps = T(1)-cs;
     for(int i = 0; i < N; ++i)
     {
       T sum;
@@ -737,10 +690,10 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
     }
 
     // cumulation for covariance matrix (pc) using B*D*z~N(0,C)
-    int hsig = std::sqrt(psxps) / std::sqrt(T(1) - std::pow(T(1) - params.cs, T(2)* gen))
+    int hsig = std::sqrt(psxps) / std::sqrt(T(1) - std::pow(T(1) - cs, T(2)* gen))
         / chiN < T(1.4) + T(2) / (N + 1);
-    const T ccumcovinv = 1.-params.ccumcov;
-    const T hsigFactor = hsig*std::sqrt(params.ccumcov*(T(2)-params.ccumcov));
+    const T ccumcovinv = 1.-ccumcov;
+    const T hsigFactor = hsig*std::sqrt(ccumcov*(T(2)-ccumcov));
     for (int i = 0; i < N; ++i)
       pc[i] = ccumcovinv*pc[i] + hsigFactor*BDz[i];
 
@@ -748,7 +701,7 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
     adaptC2(hsig);
 
     // update of sigma
-    sigma *= std::exp(((std::sqrt(psxps) / chiN) - T(1))* params.cs / params.damps);
+    sigma *= std::exp(((std::sqrt(psxps) / chiN) - T(1))* cs / damps);
 
     state = UPDATED;
     return xmean;
@@ -766,8 +719,8 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
   {
     T range, fac;
     int iAchse, iKoo;
-    int diag = params.diagonalCov == 1 || params.diagonalCov >= gen;
-    int N = params.N;
+    int diag = diagonalCov == 1 || diagonalCov >= gen;
+
     std::stringstream message;
 
     if (stopMessage != "")
@@ -776,23 +729,23 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
     }
 
     // function value reached
-    if ((gen > 1 || state > SAMPLED) && params.stStopFitness.flg &&
-        functionValues[index[0]] <= params.stStopFitness.val)
+    if ((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
+        functionValues[index[0]] <= stStopFitness.val)
     {
       message << "Fitness: function value " << functionValues[index[0]]
-          << " <= stopFitness (" << params.stStopFitness.val << ")" << std::endl;
+          << " <= stopFitness (" << stStopFitness.val << ")" << std::endl;
     }
 
     // TolFun
     range = std::max(maxElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        maxElement(functionValues, params.lambda)) -
+        maxElement(functionValues, lambda)) -
         std::min(minElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        minElement(functionValues, params.lambda));
+        minElement(functionValues, lambda));
 
-    if (gen > 0 && range <= params.stopTolFun)
+    if (gen > 0 && range <= stopTolFun)
     {
       message << "TolFun: function value differences " << range
-          << " < stopTolFun=" << params.stopTolFun << std::endl;
+          << " < stopTolFun=" << stopTolFun << std::endl;
     }
 
     // TolFunHist
@@ -800,30 +753,30 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
     {
       range = maxElement(funcValueHistory, (int) *(funcValueHistory - 1))
           - minElement(funcValueHistory, (int) *(funcValueHistory - 1));
-      if (range <= params.stopTolFunHist)
+      if (range <= stopTolFunHist)
         message << "TolFunHist: history of function value changes " << range
-            << " stopTolFunHist=" << params.stopTolFunHist << std::endl;
+            << " stopTolFunHist=" << stopTolFunHist << std::endl;
     }
 
     // TolX
     int cTemp = 0;
     for (int i = 0; i < N; ++i)
     {
-      cTemp += (sigma*std::sqrt(C[i][i]) < params.stopTolX) ? 1 : 0;
-      cTemp += (sigma*pc[i] < params.stopTolX) ? 1 : 0;
+      cTemp += (sigma*std::sqrt(C[i][i]) < stopTolX) ? 1 : 0;
+      cTemp += (sigma*pc[i] < stopTolX) ? 1 : 0;
     }
     if (cTemp == 2*N)
     {
-      message << "TolX: object variable changes below " << params.stopTolX << std::endl;
+      message << "TolX: object variable changes below " << stopTolX << std::endl;
     }
 
     // TolUpX
     for (int i = 0; i < N; ++i)
     {
-      if (sigma*std::sqrt(C[i][i]) > params.stopTolUpXFactor*params.rgInitialStds[i])
+      if (sigma*std::sqrt(C[i][i]) > stopTolUpXFactor*rgInitialStds[i])
       {
         message << "TolUpX: standard deviation increased by more than "
-            << params.stopTolUpXFactor << ", larger initial standard deviation recommended."
+            << stopTolUpXFactor << ", larger initial standard deviation recommended."
             << std::endl;
         break;
       }
@@ -868,15 +821,15 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
       }
     }
 
-    if (countevals >= params.stopMaxFunEvals)
+    if (countevals >= stopMaxFunEvals)
     {
       message << "MaxFunEvals: conducted function evaluations " << countevals
-          << " >= " << params.stopMaxFunEvals << std::endl;
+          << " >= " << stopMaxFunEvals << std::endl;
     }
-    if (gen >= params.stopMaxIter)
+    if (gen >= stopMaxIter)
     {
       message << "MaxIter: number of iterations " << gen << " >= "
-          << params.stopMaxIter << std::endl;
+          << stopMaxIter << std::endl;
     }
 
     stopMessage = message.str();
@@ -907,20 +860,20 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
       if (eigensysIsUptodate)
         return;
       // return on modulo generation number
-      if (gen < genOfEigensysUpdate + params.updateCmode.modulo)
+      if (gen < genOfEigensysUpdate + updateCmode.modulo)
         return;
     }
 
     eigen(rgD, B);
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
-    minEW = minElement(rgD, params.N);
-    maxEW = maxElement(rgD, params.N);
+    minEW = minElement(rgD, N);
+    maxEW = maxElement(rgD, N);
 
     if (doCheckEigen) // needs O(n^3)! writes, in case, error message in error file
       checkEigen(rgD, B);
 
-    for (int i = 0; i < params.N; ++i)
+    for (int i = 0; i < N; ++i)
       rgD[i] = std::sqrt(rgD[i]);
 
     eigensysIsUptodate = true;
@@ -939,7 +892,7 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
         "of samplePopulation and updateDistribution");
 
     if (newxmean && newxmean != xmean)
-      for(int i = 0; i < params.N; ++i)
+      for(int i = 0; i < N; ++i)
         xmean[i] = newxmean[i];
     else
       newxmean = xmean;
