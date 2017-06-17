@@ -83,7 +83,7 @@ void CMAES<funcType,T>::setWeights(Weights mode)
   }
 
   template<typename funcType, typename T>
-  void CMAES<funcType,T>::init(T *arr = 0, const T dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0)
+  void CMAES<funcType,T>::init(T *arr, T dimension, T* inxstart, T* inrgsigma)
   {
     
       if (!inxstart)
@@ -434,7 +434,7 @@ void CMAES<funcType,T>::eigen(T* diag, T** Q)
    * @param eps Mutation factor.
    */
   template<typename funcType, typename T>
-  void CMAES<funcType, T>::addMutation(T* x, T eps = 1.0)
+  void CMAES<funcType, T>::addMutation(T* x, T eps)
   {
     for (int i = 0; i < N; ++i)
       tempRandom[i] = rgD[i]*rand.gauss();
@@ -529,7 +529,7 @@ template<typename funcType, typename T>
     assert(i >= 0 && i <lambda &&
         "reSampleSingle(): index must be between 0 and sp.lambda");
     x = population[i];
-    addMutation(x);
+    addMutation(x, 1.0); //1 for epselon
     return population;
   }
 
@@ -552,7 +552,7 @@ template<typename funcType, typename T>
   {
     if (!x)
       x = new T[N];
-    addMutation(x);
+    addMutation(x, 1.0);
     return x;
   }
 
@@ -569,7 +569,7 @@ template<typename funcType, typename T>
   T const* CMAES<funcType, T>::reSampleSingleOld(T* x)
   {
     assert(x && "reSampleSingleOld(): Missing input x");
-    addMutation(x);
+    addMutation(x, 1.0);
     return x;
   }
 

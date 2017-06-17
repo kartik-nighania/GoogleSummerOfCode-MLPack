@@ -37,7 +37,7 @@ class CMAES
 public:
 
   //! constructor to initialize the algorithm parameters
-    CMAES(funcType func, size_t dimension, T *start, T *stdDeviation)
+    CMAES(funcType func, size_t dimension = 0, T *start = 0, T *stdDeviation = 0)
   {
     double fitToFind[dimension];
     init(fitToFind, dimension, start, stdDeviation);
@@ -216,8 +216,7 @@ void XMean(T *arr, size_t N){ for(int i=0; i<N; i++) arr[i] = xmean[i]; }
 
 private:
 
-void init(T *arr = 0, 
-const T dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0);
+void init(T *arr, T dimension, T* inxstart, T* inrgsigma);
 
 void eigen(T* diag, T** Q);
 
@@ -229,7 +228,7 @@ void adaptC2(const int hsig);
 
 void testMinStdDevs(void);
 
-void addMutation(T* x, T eps = 1.0);
+void addMutation(T* x, T eps);
 
  T maxElement(const T* rgd, int len);
 
