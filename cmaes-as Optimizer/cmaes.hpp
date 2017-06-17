@@ -22,6 +22,8 @@
 #include <armadillo>
 #include <iostream>
 
+#include "random.hpp"
+
 namespace mlpack {
 namespace optimization {
 
@@ -38,8 +40,16 @@ public:
     CMAES(funcType func, size_t dimension, T *start, T *stdDeviation)
   {
     double fitToFind[dimension];
-    int(dimension, start, stdDeviation, fitToFind);
+    init(fitToFind, dimension, start, stdDeviation);
   }
+
+   /**
+   * Determines the method used to initialize the weights.
+   */
+  enum Weights
+  {
+    UNINITIALIZED_WEIGHTS, LINEAR_WEIGHTS, EQUAL_WEIGHTS, LOG_WEIGHTS
+  } weightMode;
 
 
   //USER FUNCTIONS TO GET PARAMETER IN VALUES AND ARRAYS
@@ -125,7 +135,7 @@ void sampleSize(T l){lambda = l;}
 
 T getSampleSize(void){ return lambda; }
 
-void mu(T ind){ mu = ind;}
+void setMu(T ind){ mu = ind;}
 
 T getMu(void){ return mu;}
 
@@ -206,7 +216,8 @@ void XMean(T *arr, size_t N){ for(int i=0; i<N; i++) arr[i] = xmean[i]; }
 
 private:
 
-void init(int dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0);
+void init(T *arr = 0, 
+const T dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0);
 
 void eigen(T* diag, T** Q);
 
@@ -307,13 +318,6 @@ void addMutation(T* x, T eps = 1.0);
   T diagonalCov;
   struct { T modulo; T maxtime; } updateCmode;
   T facupdateCmode;
-  /**
-   * Determines the method used to initialize the weights.
-   */
-  enum Weights
-  {
-    UNINITIALIZED_WEIGHTS, LINEAR_WEIGHTS, EQUAL_WEIGHTS, LOG_WEIGHTS
-  } weightMode;
 
  Random<T> rand;
 
@@ -358,6 +362,9 @@ void addMutation(T* x, T eps = 1.0);
   T gen;
   //! Algorithm state.
   enum {INITIALIZED, SAMPLED, UPDATED} state;
+
+    //! Minimal fitness value. Only activated if flg is true.
+  struct { bool flg; T val; } stStopFitness;
 
   // repeatedly used for output
   T maxdiagC;

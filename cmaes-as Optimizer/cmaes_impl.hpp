@@ -46,7 +46,7 @@ namespace mlpack {
 namespace optimization {
 
 template<typename funcType, typename T>   
-void CMAES<funcType,T> setWeights(Weights mode)
+void CMAES<funcType,T>::setWeights(Weights mode)
   {
     //if called later delete the existing ones
     delete[] weights;
@@ -83,7 +83,7 @@ void CMAES<funcType,T> setWeights(Weights mode)
   }
 
   template<typename funcType, typename T>
-  void CMAES<funcType,T>::init(int dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0, double *arr)
+  void CMAES<funcType,T>::init(T *arr = 0, const T dimension = 0, const T* inxstart = 0, const T* inrgsigma = 0)
   {
     
       if (!inxstart)
@@ -93,8 +93,10 @@ void CMAES<funcType,T> setWeights(Weights mode)
         std::cout << "Warning: initialStandardDeviations undefined. 0.3...0.3." << std::endl;
 
       if (dimension <= 0) throw std::runtime_error("Problem dimension N undefined.");
-       else 
-         if (dimension > 0) N = dimension;
+        else
+          if(dimension%1 > 0) throw std::runtime_error("Problem dimension N incorrectly defined");
+          else
+            if (dimension > 0) N = dimension;
 
       diagonalCov = 0;
 
@@ -272,6 +274,9 @@ void CMAES<funcType,T> setWeights(Weights mode)
     if (typicalXcase)
       for (int i = 0; i < N; ++i)
         xmean[i] += sigma*rgD[i]*rand.gauss();
+
+    stStopFitness.flg = false;
+    stStopFitness.val = -std::numeric_limits<T>::max();
 
     for(int i=0; i<N; i++) arr[i] = publicFitness[i];
   
