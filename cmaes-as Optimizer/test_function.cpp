@@ -22,21 +22,11 @@ arma::mat cmaesTestFunction::GetInitialPoint() const { return arma::mat("6; -45.
 
 arma::mat cmaesTestFunction::GetInitialStdDev() const { return arma::mat("3; 3; 3"); }
 
-double camesTestFunction::Evaluate(const arma::mat& coordinates, const size_t i)
+double camesTestFunction::Evaluate(double const *coordinates)
     const
 {
-  switch (i)
-  {
-    case 0:
-      return -std::exp(-std::abs(coordinates[0]));
-
-    case 1:
-      return std::pow(coordinates[1], 2);
-
-    case 2:
-      return std::pow(coordinates[2], 4) + 3 * std::pow(coordinates[2], 2);
-
-    default:
-      return 0;
-  }
+ 
+    return -std::exp(-std::abs(coordinates[0])) + 
+            std::pow(coordinates[1], 2) + 
+            std::pow(coordinates[2], 4) + 3 * std::pow(coordinates[2], 2);
 }

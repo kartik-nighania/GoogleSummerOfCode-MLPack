@@ -39,7 +39,7 @@ class cmaesTestFunction
   arma::mat GetInitialStdDev() const;
 
   //! Evaluate a function.
-  double Evaluate(const arma::mat& coordinates, const size_t i) const;
+  double Evaluate( double const *coordinates) const;
 };
 
 } // namespace test

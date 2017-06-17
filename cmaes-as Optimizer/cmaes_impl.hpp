@@ -83,7 +83,7 @@ void CMAES<funcType,T>::setWeights(Weights mode)
   }
 
   template<typename funcType, typename T>
-  void CMAES<funcType,T>::init(T *arr, T dimension, T* inxstart, T* inrgsigma)
+  T* CMAES<funcType,T>::init(T dimension, T* inxstart, T* inrgsigma)
   {
     
       if (!inxstart)
@@ -279,9 +279,42 @@ void CMAES<funcType,T>::setWeights(Weights mode)
     stStopFitness.flg = false;
     stStopFitness.val = -std::numeric_limits<T>::max();
 
-    for(int i=0; i<N; i++) arr[i] = publicFitness[i];
+    return publicFitness;
   
   }
+
+//! Optimize the function (minimize).
+template<typename funcType, typename T>
+T CMAES<funcType, T>::Optimize(funcType& func, T *iterate)
+{
+  // numof functions for the N and the evaluate for the function
+  // return the final answer  and the xfinal in the iterate itself
+  //TEST FOR TERMINATE SAMPLE AND UPDATE
+
+// Iterate until stop criterion holds
+  while(!testForTermination())
+  { 
+    double *const*pop;
+    // Generate lambda new search points, sample population
+    pop = samplePopulation();
+
+    const size_t numFunctions = func.NumFunctions();
+
+    // evaluate the new search points using evaluate function given by the user
+    for (int i = 0; i < lambda; ++i)
+     functionFitness[i] = func.Evaluate(pop[i]);
+
+    // update the search distribution used for sampleDistribution()
+    updateDistribution(functionFitness);
+  }
+
+  std::cout << "Stop:" << getStopMessage();
+
+  // get best estimator for the optimum, xmean
+   for(int i=0; i<N; i++) iterate[i] = xmean[i]; // "XBestEver" might be used as well
+   
+   return 0;
+}
 
  
 
@@ -289,9 +322,8 @@ void CMAES<funcType,T>::setWeights(Weights mode)
 successful eigen decomposition.    * @param diag (output) N eigenvalues.    *
 @param Q (output) Columns are normalized eigenvectors.    */
 template<typename funcType, typename T>   
-void CMAES<funcType,T>::eigen(T* diag, T** Q)  
+void CMAES<funcType,T>::eigen(T* diag , T** Q)  
 {
-
      arma::vec eV;
      arma::mat eigMat;
 
