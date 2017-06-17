@@ -215,6 +215,7 @@ void XMean(T *arr, size_t N){ for(int i=0; i<N; i++) arr[i] = xmean[i]; }
     delete[] publicFitness;
     delete[] --functionValues;
     delete[] --funcValueHistory;
+    
   }
 
 private:

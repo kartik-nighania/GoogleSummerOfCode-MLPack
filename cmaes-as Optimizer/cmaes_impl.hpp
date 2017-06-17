@@ -49,7 +49,7 @@ template<typename funcType, typename T>
 void CMAES<funcType,T>::setWeights(Weights mode)
   {
     //if called later delete the existing ones
-    delete[] weights;
+   // delete[] weights;
     weights = new T[mu];
 
     switch(mode)
