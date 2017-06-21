@@ -162,14 +162,14 @@ private:
       for(int j=0; j<=i; j++) cov(i,j)=cov(j,i)=C[i][j];
 
 
-   if(!arma::eig_sym(eV, eigMat, cov))
+   if (!arma::eig_sym(eV, eigMat, cov))
         assert("eigen decomposition failed in neuro_cmaes::eigen()");
 
-     for(int i=0; i<params.N; i++)
+     for (int i=0; i<params.N; i++)
      {
       diag[i]=eV(i);
 
-        for(int j=0; j<params.N; j++)
+        for (int j=0; j<params.N; j++)
         Q[i][j]=eigMat(i,j);
       
      }
@@ -185,8 +185,8 @@ private:
   {
     // compute Q diag Q^T and Q Q^T to check
     int res = 0;
-    for(int i = 0; i < params.N; ++i)
-      for(int j = 0; j < params.N; ++j) {
+    for (int i = 0; i < params.N; ++i)
+      for (int j = 0; j < params.N; ++j) {
         T cc = 0., dd = 0.;
         for(int k = 0; k < params.N; ++k)
         {
