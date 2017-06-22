@@ -22,8 +22,6 @@ double fitfun(double const *x, int N)
 int main(int, char**)
  {
 
-  CMAES<double> evo;
-
   double *arFunvals, *const*pop, *xfinal;
 
   
@@ -35,11 +33,9 @@ int main(int, char**)
   double stddev[dim];
   for(int i=0; i<dim; i++) stddev[i] = 0.5;
 
-  Parameters<double> parameters;
+  CMAES<double> evo(dim, xstart, stddev);
 
-  parameters.init(dim, xstart, stddev);
-
-  arFunvals = evo.init(parameters);
+  arFunvals = evo.init();
 
   while(!evo.testForTermination())
   {
