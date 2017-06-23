@@ -32,8 +32,9 @@ namespace mlpack {
 namespace optimization {
 
   template<typename funcType>
-  CMAES<funcType>::CMAES(int dimension, const double* inxstart, const double* inrgsigma)
-      : N(-1),
+  CMAES<funcType>::CMAES(funcType& function, int dimension, const double* inxstart, const double* inrgsigma)
+      : function(function),
+        N(-1),
         xstart(0),
         typicalX(0),
         typicalXcase(false),
@@ -203,6 +204,34 @@ namespace optimization {
     if(updateCmode.maxtime < 0)
       updateCmode.maxtime = 0.20; // maximal 20% of CPU-time
   
+  }
+
+  template<typename funcType>
+  double CMAES<funcType>::Optimize(double *arr)
+  {
+
+  arFunvals = init();
+
+  while(!testForTermination())
+  {
+    // Generate lambda new search points, sample population
+    pop = samplePopulation();
+
+    // evaluate the new search points using fitfun from above
+    for (int i = 0; i < lambda; ++i)
+      arFunvals[i] = function.Evaluate(pop[i], N);
+
+    // update the search distribution used for sampleDistribution()
+      updateDistribution(arFunvals);
+  }
+
+  std::cout << "Stop:" << std::endl << getStopMessage();
+
+  // get best estimator for the optimum
+  for(int i=0; i<N; i++) arr[i] = xmean[i]; 
+
+  return xBestEver[N];
+
   }
 
 /**

@@ -35,7 +35,9 @@ class CMAES
 {
 public:
 
-  CMAES(int dimension = 0, const double* inxstart = 0, const double* inrgsigma = 0);
+  CMAES(funcType& function, int dimension = 0, const double* inxstart = 0, const double* inrgsigma = 0);
+
+  double Optimize(double *arr);
 
   size_t getDimension(void){ return N;}
 
@@ -163,13 +165,25 @@ void getFittestMean(double *arr)
   for(int i=0; i<N; i++) arr[i] = xmean[i]; 
 }
 
+ 
+
+  double maxElement(const double* rgd, int len)
+  {
+    return *std::max_element(rgd, rgd + len);
+  }
+
+  double minElement(const double* rgd, int len)
+  {
+    return *std::min_element(rgd, rgd + len);
+  }
+
 /**
    * A message that contains a detailed description of the matched stop
    * criteria.
    */
   std::string getStopMessage(){return stopMessage;}
 
-      /**
+ /**
    * Determines the method used to initialize the weights.
    */
   enum Weights
@@ -179,9 +193,17 @@ void getFittestMean(double *arr)
 
   void setWeights(Weights mode);
 
+  ~CMAES();
+
 private:
 
   /* Input parameters. */
+  //! The instantiated function.
+  funcType& function;
+
+  double *arFunvals;
+
+  double *const*pop;
   //! Problem dimension, must stay constant.
   int N;
   //! Initial search space vector.
@@ -316,8 +338,10 @@ private:
 
   double dLastMinEWgroesserNull;
 
-  std::string stopMessage; //!< A message that contains all matched stop criteria.
+  double countevals; //!< objective function evaluations
 
+  std::string stopMessage; //!< A message that contains all matched stop criteria.
+  
   void eigen(double* diag, double** Q);
   int  checkEigen(double* diag, double** Q);
   void sortIndex(const double* rgFunVal, int* iindex, int n);
@@ -325,19 +349,6 @@ private:
   void testMinStdDevs(void);
   void addMutation(double* x, double eps = 1.0);
 
-public:
-
-  double countevals; //!< objective function evaluations
-
-	double maxElement(const double* rgd, int len)
-	{
-	  return *std::max_element(rgd, rgd + len);
-	}
-
-	double minElement(const double* rgd, int len)
-	{
-	  return *std::min_element(rgd, rgd + len);
-	}
    double* init();
    double* const* samplePopulation();
    double* const* reSampleSingle(int i);
@@ -349,8 +360,6 @@ public:
 
    bool testForTermination();
    void updateEigensystem(bool force);
-
-  ~CMAES();
 
 };
 } // namespace optimization
