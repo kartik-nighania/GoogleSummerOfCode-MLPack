@@ -35,6 +35,152 @@ class CMAES
 {
 public:
 
+  CMAES(int dimension = 0, const double* inxstart = 0, const double* inrgsigma = 0);
+
+  size_t getDimension(void){ return N;}
+
+  void getInitialStart(double *arr, size_t dimension)
+  { 
+    for(int i=0; i<N; i++) arr[i] = xstart[i];
+  }
+  
+   void getInitialStandardDeviations(double *arr, size_t dimension)
+  { 
+
+    for(int i=0; i<N; i++) arr[i] = rgInitialStds[i];
+  }
+
+    void getStandardDeviations(double *arr)
+  { 
+  
+    for(int i = 0; i < N; ++i)
+    arr[i] = sigma*std::sqrt(C[i][i]);    
+  }
+
+  void getXBestEver(double *arr)
+  { 
+    for(int i = 0; i < N; ++i) arr[i] = xBestEver[i];    
+  }
+
+
+    void stopMaxFuncEvaluations(double evaluations)
+  {
+     stopMaxFunEvals = evaluations;
+  }
+
+  double getStopMaxFuncEvaluations(void)
+  {
+    return  stopMaxFunEvals;
+  }
+
+  void stopMaxIterations(double iterations)
+  {
+    stopMaxIter = iterations;
+  }
+
+  double getStopMaxIterations(void)
+  {
+    return stopMaxIter;
+  }
+
+
+  void stopMinFuntionDifference(double difference)
+  {
+    stopTolFun = difference;
+  }
+
+  double getStopMinFunctionDifference(void)
+  {
+    return stopTolFun;
+  }
+
+void stopMinFuntionHistoryDifference(double difference)
+  {
+    stopTolFunHist = difference;
+  }
+
+  double getStopMinFunctionHistoryDifference(void)
+  {
+    return stopTolFunHist;
+  }
+
+  void stopMinStepSize(double size)
+  {
+    stopTolX = size;
+  }
+
+  double getStopMinStepSize(void)
+  {
+    return stopTolX;
+  }
+
+  //! other variable parameters
+
+void sampleSize(double l){lambda = l;}
+
+int getSampleSize(void){ return lambda; }
+
+void setMu(double ind){ mu = ind;}
+
+double getMu(void){ return mu;}
+
+void muEffective(double ind){ mueff = ind;}
+
+double getMuEffective(void){ return mueff;}
+
+double axisRatio() { return maxElement(rgD,N) / minElement(rgD,N);};
+
+double evaluation(){ return countevals; }
+
+double fitness(){ return functionValues[index[0]];}
+
+double fitnessBestEver(){ return xBestEver[N];}
+
+double generation(){ return gen;}
+
+double maxAxisLength(){ return sigma*std::sqrt(maxEW);}
+
+double minAxisLength(){ return sigma*std::sqrt(minEW); }
+
+double maxStdDev(){return sigma*std::sqrt(maxdiagC);}
+
+double minStdDev(){return sigma*std::sqrt(mindiagC);}
+
+void diagonalCovariance(double *arr)
+  {
+     for(int i = 0; i < N; ++i) arr[i] = C[i][i];
+  }
+
+  void diagonalD(double *arr, size_t N) { for(int i = 0; i < N; ++i) arr[i] = rgD[i]; }
+
+  void standardDeviation(double *arr, size_t N)
+  {
+    for(int i = 0; i < N; ++i) arr[i] = sigma*std::sqrt(C[i][i]);
+  }
+
+void getFittestMean(double *arr)
+{ 
+  for(int i=0; i<N; i++) arr[i] = xmean[i]; 
+}
+
+/**
+   * A message that contains a detailed description of the matched stop
+   * criteria.
+   */
+  std::string getStopMessage(){return stopMessage;}
+
+      /**
+   * Determines the method used to initialize the weights.
+   */
+  enum Weights
+  {
+    UNINITIALIZED_WEIGHTS, LINEAR_WEIGHTS, EQUAL_WEIGHTS, LOG_WEIGHTS
+  } weightMode;
+
+  void setWeights(Weights mode);
+
+private:
+
   /* Input parameters. */
   //! Problem dimension, must stay constant.
   int N;
@@ -104,14 +250,6 @@ public:
   struct { double modulo; double maxtime; } updateCmode;
   double facupdateCmode;
 
-  /**
-   * Determines the method used to initialize the weights.
-   */
-  enum Weights
-  {
-    UNINITIALIZED_WEIGHTS, LINEAR_WEIGHTS, EQUAL_WEIGHTS, LOG_WEIGHTS
-  } weightMode;
-
   //! File that contains an optimization state that should be resumed.
   std::string resumefile;
 
@@ -119,47 +257,6 @@ public:
   bool logWarnings;
   //! Output stream that is used to log warnings, usually std::cerr.
   std::ostream& logStream;
-
-
-  CMAES(int dimension = 0, const double* inxstart = 0, const double* inrgsigma = 0);
-
-  /**
-   * Keys for get().
-   */
-  enum GetScalar
-  {
-    NoScalar = 0,
-    AxisRatio = 1,
-    Eval = 2, Evaluations = 2,
-    FctValue = 3, FuncValue = 3, FunValue = 3, Fitness = 3,
-    FBestEver = 4,
-    Generation = 5, Iteration = 5,
-    MaxEval = 6, MaxFunEvals = 6, StopMaxFunEvals = 6,
-    MaxGen = 7, MaxIter = 7, StopMaxIter = 7,
-    MaxAxisLength = 8,
-    MinAxisLength = 9,
-    MaxStdDev = 10,
-    MinStdDev = 11,
-    Dim = 12, Dimension = 12,
-    Lambda = 13, SampleSize = 13, PopSize = 13,
-    Sigma = 14
-  };
-
-  /**
-   * Keys for getPtr()
-   */
-  enum GetVector
-  {
-    NoVector = 0,
-    DiagC = 1,
-    DiagD = 2,
-    StdDev = 3,
-    XBestEver = 4,
-    XBest = 5,
-    XMean = 6
-  };
-
-private:
 
   Random<double> rand;
 
@@ -248,22 +345,10 @@ public:
    double const* reSampleSingleOld(double* x);
    double* perturbSolutionInto(double* x, double const* pxmean, double eps);
    double* updateDistribution(const double* fitnessValues);
-   double get(GetScalar key);
-   double* getNew(GetVector key);
-   double* getInto(GetVector key, double* res);
    double const* setMean(const double* newxmean);
-   
-   const double* getPtr(GetVector key);
+
    bool testForTermination();
    void updateEigensystem(bool force);
-     /**
-   * A message that contains a detailed description of the matched stop
-   * criteria.
-   */
-  std::string getStopMessage()
-  {
-    return stopMessage;
-  }
 
   ~CMAES();
 

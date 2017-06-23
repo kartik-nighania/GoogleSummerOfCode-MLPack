@@ -22,7 +22,7 @@ double fitfun(double const *x, int N)
 int main(int, char**)
  {
 
-  double *arFunvals, *const*pop, *xfinal;
+  double *arFunvals, *const*pop, xfinal[2];
 
   
   const int dim = 2;
@@ -43,8 +43,8 @@ int main(int, char**)
     pop = evo.samplePopulation();
 
     // evaluate the new search points using fitfun from above
-    for (int i = 0; i < evo.get(CMAES<double>::Lambda); ++i)
-      arFunvals[i] = fitfun(pop[i], (int) evo.get(CMAES<double>::Dimension));
+    for (int i = 0; i < evo.getSampleSize(); ++i)
+      arFunvals[i] = fitfun(pop[i], (int) evo.getDimension());
 
     // update the search distribution used for sampleDistribution()
     evo.updateDistribution(arFunvals);
@@ -53,11 +53,9 @@ int main(int, char**)
   std::cout << "Stop:" << std::endl << evo.getStopMessage();
 
   // get best estimator for the optimum
-  xfinal = evo.getNew(CMAES<double>::XMean);
+  evo.getFittestMean(xfinal);
 
-  std::cout << "value for x = " << *xfinal << " value for y = " << *(xfinal+1) << std::endl;
-
-  delete[] xfinal;
+  std::cout << "value for x = " << xfinal[0] << " value for y = " << xfinal[1] << std::endl;
 
   return 0;
 }

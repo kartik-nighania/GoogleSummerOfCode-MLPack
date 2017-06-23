@@ -42,8 +42,8 @@ namespace optimization {
         stopMaxFunEvals(-1),
         facmaxeval(1.0),
         stopMaxIter(-1.0),
-        stopTolFun(1e-12),
-        stopTolFunHist(1e-13),
+        stopTolFun(1e-14),
+        stopTolFunHist(1e-14),
         stopTolX(0), // 1e-11*insigma would also be reasonable
         stopTolUpXFactor(1e3),
         lambda(-1),
@@ -751,117 +751,6 @@ namespace optimization {
 
     state = UPDATED;
     return xmean;
-  }
-
-    /**
-   * Request a scalar parameter from CMA-ES.
-   * @param key Key of the requested scalar.
-   * @return The desired value.
-   */
-   template<typename funcType>
-  double CMAES<funcType>::get(GetScalar key)
-  {
-    switch(key)
-    {
-      case AxisRatio:
-        return maxElement(rgD, N) / minElement(rgD, N);
-      case Eval:
-        return countevals;
-      case Fitness:
-        return functionValues[index[0]];
-      case FBestEver:
-        return xBestEver[N];
-      case Generation:
-        return gen;
-      case MaxEval:
-        return stopMaxFunEvals;
-      case MaxIter:
-        return std::ceil(stopMaxIter);
-      case MaxAxisLength:
-        return sigma*std::sqrt(maxEW);
-      case MinAxisLength:
-        return sigma*std::sqrt(minEW);
-      case MaxStdDev:
-        return sigma*std::sqrt(maxdiagC);
-      case MinStdDev:
-        return sigma*std::sqrt(mindiagC);
-      case Dimension:
-        return N;
-      case SampleSize:
-        return lambda;
-      case Sigma:
-        return sigma;
-      default:
-        throw std::runtime_error("get(): No match found for key");
-    }
-  }
-
-  /**
-   * Request a vector parameter from CMA-ES.
-   * @param key Key of the requested vector.
-   * @return Pointer to the desired value array. Its content might be
-   *         overwritten during the next call to any member functions other
-   *         than get().
-   */
-   template<typename funcType>
-  const double* CMAES<funcType>::getPtr(GetVector key)
-  {
-    switch(key)
-    {
-      case DiagC:
-      {
-        for(int i = 0; i < N; ++i)
-          output[i] = C[i][i];
-        return output;
-      }
-      case DiagD:
-        return rgD;
-      case StdDev:
-      {
-        for(int i = 0; i < N; ++i)
-          output[i] = sigma*std::sqrt(C[i][i]);
-        return output;
-      }
-      case XBestEver:
-        return xBestEver;
-      case XBest:
-        return population[index[0]];
-      case XMean:
-        return xmean;
-      default:
-        throw std::runtime_error("getPtr(): No match found for key");
-    }
-  }
-
-  /**
-   * Request a vector parameter from CMA-ES.
-   * @param key Key of the requested vector.
-   * @return Pointer to the desired value array with unlimited reading and
-   *         writing access to its elements. The memory must be explicitly
-   *         released using delete[].
-   */
-   template<typename funcType>
-  double* CMAES<funcType>::getNew(GetVector key)
-  {
-    return getInto(key, 0);
-  }
-
-  /**
-   * Request a vector parameter from CMA-ES.
-   * @param key Key of the requested vector.
-   * @param res Memory of size N == dimension, where the desired values are
-   *            written into. For mem == NULL new memory is allocated as with
-   *            calling getNew() and must be released by the user at some point.
-   */
-   template<typename funcType>
-  double* CMAES<funcType>::getInto(GetVector key, double* res)
-  {
-    double const* res0 = getPtr(key);
-    if(!res)
-      res = new double[N];
-    for(int i = 0; i < N; ++i)
-      res[i] = res0[i];
-    return res;
   }
 
   /**
