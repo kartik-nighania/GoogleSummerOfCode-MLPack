@@ -31,7 +31,6 @@ public:
     return func;
   }
 
-  //! Return 3 (the number of functions).
   size_t NumFunctions() const { return 2; }
 };
 
@@ -39,19 +38,17 @@ int main(int, char**)
  {
    testFunction test;
 
-  double xstart[2];
-  for(int i=0; i<2; i++) xstart[i] = 0.5;
-
-  double stddev[2];
-  for(int i=0; i<2; i++) stddev[i] = 0.5;
+  arma::mat xstart("0.5; 0.5");
+  arma::mat stddev("0.5; 0.5");
 
   CMAES<testFunction> evo(test, xstart, stddev);
   
-  double xfinal[2];
+  arma::mat values(2,1);
 
-  double low = evo.Optimize(xfinal);
+  double result = evo.Optimize(values);
 
-  std::cout << "lowest value found being = " << low << std::endl << " value for x = " << xfinal[0] << " value for y = " << xfinal[1] << std::endl;
+  std::cout << "lowest value found being = " << result << std::endl 
+ << " value for x = " << values(0) << " value for y = " << values(1) << std::endl;
 
   return 0;
 }

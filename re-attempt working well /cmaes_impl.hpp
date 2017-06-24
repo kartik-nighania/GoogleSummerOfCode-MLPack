@@ -32,11 +32,9 @@ namespace mlpack {
 namespace optimization {
 
   template<typename funcType>
-  CMAES<funcType>::CMAES(funcType& function, const double* inxstart, const double* inrgsigma)
+  CMAES<funcType>::CMAES(funcType& function, arma::mat& start, arma::mat& stdDivs)
       : function(function),
         N(-1),
-        xstart(0),
-        typicalX(0),
         typicalXcase(false),
         rgInitialStds(0),
         rgDiffMinChange(0),
@@ -63,58 +61,55 @@ namespace optimization {
     stStopFitness.val = -std::numeric_limits<double>::max();
     updateCmode.modulo = -1;
     updateCmode.maxtime = -1;
-  
-   if(!(xstart || inxstart || typicalX))
-        std::cout << " Warning: initialX undefined. Please specify if incorrect results detected DEFAULT = 0.5...0.5." << std::endl;
-      if(!(rgInitialStds || inrgsigma))
-        std::cout << "Warning: initialStandardDeviations undefined. Please specify if incorrect results detected DEFAULT = 0.3...0.3." << std::endl;
-    
-    N = function.NumFunctions();
 
+     N = function.NumFunctions();
     if( N <= 0)
       throw std::runtime_error("Problem dimension N undefined.");
+    
+    bool startP  = true;
+    bool initDev = true;
+
+    for(int i=0; i<N; i++)
+    {
+     if(start[i]   < 1.0e-200) startP  = false;
+     if(stdDivs[i] < 1.0e-200) initDev = false;
+    }
+
+  
+   if(!startP)
+        std::cout << " WARNING: initial start point undefined. Please specify if incorrect results detected. DEFAULT = 0.5...0.5." << std::endl;
+   if(!initDev)
+        std::cout << "WARNING: initialStandardDeviations undefined. Please specify if incorrect results detected. DEFAULT = 0.3...0.3." << std::endl;
+    
+   
 
     if(weightMode == UNINITIALIZED_WEIGHTS)
       weightMode = LOG_WEIGHTS;
 
     diagonalCov = 0; // default is 0, but this might change in future
 
-    if(!xstart)
-    {
       xstart = new double[N];
-      if(inxstart)
+      if(startP)
       {
-        for(int i = 0; i < N; ++i)
-          xstart[i] = inxstart[i];
+        for(int i = 0; i < N; ++i) xstart[i] = start[i];
       }
-      else if(typicalX)
-      {
-        typicalXcase = true;
-        for(int i = 0; i < N; ++i)
-          xstart[i] = typicalX[i];
-      }
-      else
+     else
       {
         typicalXcase = true;
-        for(int i = 0; i < N; i++)
-          xstart[i] = 0.5;
+        for(int i = 0; i < N; i++) xstart[i] = 0.5;
       }
-    }
+  
 
-    if(!rgInitialStds)
-    {
-      rgInitialStds = new double[N];
-      if(inrgsigma)
+    rgInitialStds = new double[N];
+    if(initDev)
       {
-        for(int i = 0; i < N; ++i)
-          rgInitialStds[i] = inrgsigma[i];
+        for(int i = 0; i < N; ++i) rgInitialStds[i] = stdDivs[i];
       }
       else
       {
-        for(int i = 0; i < N; ++i)
-          rgInitialStds[i] = double(0.3);
+        for(int i = 0; i < N; ++i) rgInitialStds[i] = double(0.3);
       }
-    }
+
 
     if(lambda < 2)
       lambda = 4 + (int) (3.0*log((double) N));
@@ -201,7 +196,7 @@ namespace optimization {
   }
 
   template<typename funcType>
-  double CMAES<funcType>::Optimize(double *arr)
+  double CMAES<funcType>::Optimize(arma::mat& arr)
   {
 
   arFunvals = init();
@@ -998,10 +993,6 @@ namespace optimization {
     delete[] --functionValues;
     delete[] --funcValueHistory;
 
-    if(xstart)
-      delete[] xstart;
-    if(typicalX)
-      delete[] typicalX;
     if(rgInitialStds)
       delete[] rgInitialStds;
     if(rgDiffMinChange)

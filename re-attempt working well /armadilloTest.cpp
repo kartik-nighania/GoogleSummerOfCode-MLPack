@@ -4,18 +4,31 @@
 using namespace std;
 using namespace arma;
 
- double gauss(void)
+ void gauss(arma::mat& x)
    {
-    arma::mat gauss = arma::randu<arma::mat>(1,1);
-    return gauss(0);
-
+   		cout << endl << "here it is " << x[1] << endl;
    }
 int main()
-{
-	double r=10;
+{	
 
-	double d = gauss();
+	const mat ok("0; 0.44");
+	mat pk(3,2);
+	cout << endl << ok[0] <<  " " << pk(0,0)<< endl  ;
+
+	double z = 1.2e-100;
+
+	cout << z;
+
+	//double r=10;
+	//gauss(ok);
+
+	/* double d = gauss();
 	double s = gauss();
-	cout << d << " " << s << endl; 
+	cout << d << " " << s << endl;
+	*/
+
+	//cout << endl << ok[1] << " " << ok[0] << endl ;
+
+	//cout << arma::size(ok);
 	return 0;
 }

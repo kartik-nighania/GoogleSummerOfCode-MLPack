@@ -35,9 +35,9 @@ class CMAES
 {
 public:
 
-  CMAES(funcType& function, const double* inxstart = 0, const double* inrgsigma = 0);
+  CMAES(funcType& function, arma::mat& start, arma::mat& stdDivs);
 
-  double Optimize(double *arr);
+  double Optimize(arma::mat& arr);
 
   size_t getDimension(void){ return N;}
 
