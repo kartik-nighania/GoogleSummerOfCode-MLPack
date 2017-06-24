@@ -335,7 +335,7 @@ private:
   std::string stopMessage; //!< A message that contains all matched stop criteria.
   
   void eigen(double* diag, double** Q);
-  int  checkEigen(double* diag, double** Q);
+  void updateEigensystem(bool force);
   void sortIndex(const double* rgFunVal, int* iindex, int n);
   void adaptC2(const int hsig);
   void testMinStdDevs(void);
@@ -351,7 +351,7 @@ private:
    double const* setMean(const double* newxmean);
 
    bool testForTermination();
-   void updateEigensystem(bool force);
+   int  checkEigen(double* diag, double** Q);
 
 };
 } // namespace optimization
