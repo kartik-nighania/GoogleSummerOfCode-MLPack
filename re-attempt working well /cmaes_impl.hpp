@@ -32,7 +32,7 @@ namespace mlpack {
 namespace optimization {
 
   template<typename funcType>
-  CMAES<funcType>::CMAES(funcType& function, int dimension, const double* inxstart, const double* inrgsigma)
+  CMAES<funcType>::CMAES(funcType& function, const double* inxstart, const double* inrgsigma)
       : function(function),
         N(-1),
         xstart(0),
@@ -57,28 +57,22 @@ namespace optimization {
         ccumcov(-1),
         ccov(-1),
         facupdateCmode(1),
-        weightMode(UNINITIALIZED_WEIGHTS),
-        resumefile(""),
-        logWarnings(false),
-        logStream(std::cerr)
+        weightMode(UNINITIALIZED_WEIGHTS)
   {
     stStopFitness.flg = false;
     stStopFitness.val = -std::numeric_limits<double>::max();
     updateCmode.modulo = -1;
     updateCmode.maxtime = -1;
   
-    if(logWarnings)
-    {
-      if(!(xstart || inxstart || typicalX))
-        logStream << "Warning: initialX undefined. typicalX = 0.5...0.5." << std::endl;
+   if(!(xstart || inxstart || typicalX))
+        std::cout << " Warning: initialX undefined. Please specify if incorrect results detected DEFAULT = 0.5...0.5." << std::endl;
       if(!(rgInitialStds || inrgsigma))
-        logStream << "Warning: initialStandardDeviations undefined. 0.3...0.3." << std::endl;
-    }
+        std::cout << "Warning: initialStandardDeviations undefined. Please specify if incorrect results detected DEFAULT = 0.3...0.3." << std::endl;
+    
+    N = function.NumFunctions();
 
-    if(dimension <= 0 && N <= 0)
+    if( N <= 0)
       throw std::runtime_error("Problem dimension N undefined.");
-    else if(dimension > 0)
-      N = dimension;
 
     if(weightMode == UNINITIALIZED_WEIGHTS)
       weightMode = LOG_WEIGHTS;
@@ -217,9 +211,15 @@ namespace optimization {
     // Generate lambda new search points, sample population
     pop = samplePopulation();
 
-    // evaluate the new search points using fitfun from above
+    arma::mat fit(1,N);
+
+    // evaluate the new search points using the given evaluate function by the user
     for (int i = 0; i < lambda; ++i)
-      arFunvals[i] = function.Evaluate(pop[i], N);
+    {
+      for(int j=0; j<N; j++) fit(0,j) = pop[i][j];
+
+      arFunvals[i] = function.Evaluate(fit);
+    }
 
     // update the search distribution used for sampleDistribution()
       updateDistribution(arFunvals);
@@ -292,8 +292,8 @@ namespace optimization {
           std::stringstream s;
           s << i << " " << j << ": " << cc << " " << C[i > j ? i : j][i > j ? j : i]
               << ", " << cc - C[i > j ? i : j][i > j ? j : i];
-          if(logWarnings)
-            logStream << "eigen(): imprecise result detected " << s.str()
+          
+          std::cout << "eigen(): imprecise result detected " << s.str()
                 << std::endl;
           ++res;
         }
@@ -301,8 +301,8 @@ namespace optimization {
         {
           std::stringstream s;
           s << i << " " << j << " " << dd;
-          if(logWarnings)
-            logStream << "eigen(): imprecise result detected (Q not orthog.)"
+          
+            std::cout << "eigen(): imprecise result detected (Q not orthog.)"
                 << s.str() << std::endl;
           ++res;
         }

@@ -35,7 +35,7 @@ class CMAES
 {
 public:
 
-  CMAES(funcType& function, int dimension = 0, const double* inxstart = 0, const double* inrgsigma = 0);
+  CMAES(funcType& function, const double* inxstart = 0, const double* inrgsigma = 0);
 
   double Optimize(double *arr);
 
@@ -271,14 +271,6 @@ private:
   double diagonalCov;
   struct { double modulo; double maxtime; } updateCmode;
   double facupdateCmode;
-
-  //! File that contains an optimization state that should be resumed.
-  std::string resumefile;
-
-  //! Set to true to activate logging warnings.
-  bool logWarnings;
-  //! Output stream that is used to log warnings, usually std::cerr.
-  std::ostream& logStream;
 
   Random<double> rand;
 
