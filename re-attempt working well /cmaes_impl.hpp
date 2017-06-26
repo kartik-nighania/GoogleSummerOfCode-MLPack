@@ -63,123 +63,123 @@ namespace optimization {
     updateCmode.maxtime = -1;
 
      N = function.NumFunctions();
-    if( N <= 0)
+    if ( N <= 0)
       throw std::runtime_error("Problem dimension N undefined.");
     
     bool startP  = true;
     bool initDev = true;
 
-    for(int i=0; i<N; i++)
+    for (int i=0; i<N; i++)
     {
-     if(start[i]   < 1.0e-200) startP  = false;
-     if(stdDivs[i] < 1.0e-200) initDev = false;
+     if (start[i]   < 1.0e-200) startP  = false;
+     if (stdDivs[i] < 1.0e-200) initDev = false;
     }
 
   
-   if(!startP)
+   if (!startP)
         std::cout << " WARNING: initial start point undefined. Please specify if incorrect results detected. DEFAULT = 0.5...0.5." << std::endl;
-   if(!initDev)
+   if (!initDev)
         std::cout << "WARNING: initialStandardDeviations undefined. Please specify if incorrect results detected. DEFAULT = 0.3...0.3." << std::endl;
     
    
 
-    if(weightMode == UNINITIALIZED_WEIGHTS)
+    if (weightMode == UNINITIALIZED_WEIGHTS)
       weightMode = LOG_WEIGHTS;
 
     diagonalCov = 0; // default is 0, but this might change in future
 
       xstart = new double[N];
-      if(startP)
+      if (startP)
       {
-        for(int i = 0; i < N; ++i) xstart[i] = start[i];
+        for (int i = 0; i < N; ++i) xstart[i] = start[i];
       }
      else
       {
         typicalXcase = true;
-        for(int i = 0; i < N; i++) xstart[i] = 0.5;
+        for (int i = 0; i < N; i++) xstart[i] = 0.5;
       }
   
 
     rgInitialStds = new double[N];
-    if(initDev)
+    if (initDev)
       {
-        for(int i = 0; i < N; ++i) rgInitialStds[i] = stdDivs[i];
+        for (int i = 0; i < N; ++i) rgInitialStds[i] = stdDivs[i];
       }
       else
       {
-        for(int i = 0; i < N; ++i) rgInitialStds[i] = double(0.3);
+        for (int i = 0; i < N; ++i) rgInitialStds[i] = double(0.3);
       }
 
 
-    if(lambda < 2)
+    if (lambda < 2)
       lambda = 4 + (int) (3.0*log((double) N));
-    if(mu <= 0)
+    if (mu <= 0)
       mu = lambda / 2;
-    if(!weights)
+    if (!weights)
      {
-     if(weights)
+     if (weights)
         delete[] weights;
       weights = new double[mu];
       switch(weightMode)
       {
       case LINEAR_WEIGHTS:
-        for(int i = 0; i < mu; ++i) weights[i] = mu - i;
+        for (int i = 0; i < mu; ++i) weights[i] = mu - i;
         break;
       case EQUAL_WEIGHTS:
-        for(int i = 0; i < mu; ++i) weights[i] = 1;
+        for (int i = 0; i < mu; ++i) weights[i] = 1;
         break;
       case LOG_WEIGHTS:
       default:
-        for(int i = 0; i < mu; ++i) weights[i] = log(mu + 1.) - log(i + 1.);
+        for (int i = 0; i < mu; ++i) weights[i] = log(mu + 1.) - log(i + 1.);
         break;
       }
 
       // normalize weights vector and set mueff
       double s1 = 0, s2 = 0;
-      for(int i = 0; i < mu; ++i)
+      for (int i = 0; i < mu; ++i)
       {
         s1 += weights[i];
         s2 += weights[i]*weights[i];
       }
       mueff = s1*s1/s2;
-      for(int i = 0; i < mu; ++i)
+      for (int i = 0; i < mu; ++i)
         weights[i] /= s1;
 
-      if(mu < 1 || mu > lambda || (mu == lambda && weights[0] == weights[mu - 1]))
+      if (mu < 1 || mu > lambda || (mu == lambda && weights[0] == weights[mu - 1]))
         throw std::runtime_error("setWeights(): invalid setting of mu or lambda");
     }
 
-    if(cs > 0)
+    if (cs > 0)
       cs *= (mueff + 2.) / (N + mueff + 3.);
-    if(cs <= 0 || cs >= 1)
+    if (cs <= 0 || cs >= 1)
       cs = (mueff + 2.) / (N + mueff + 3.);
 
-    if(ccumcov <= 0 || ccumcov > 1)
+    if (ccumcov <= 0 || ccumcov > 1)
       ccumcov = 4. / (N + 4);
 
-    if(mucov < 1)
+    if (mucov < 1)
       mucov = mueff;
     double t1 = 2. / ((N + 1.4142)*(N + 1.4142));
     double t2 = (2.* mueff - 1.) / ((N + 2.)*(N + 2.) + mueff);
     t2 = (t2 > 1) ? 1 : t2;
     t2 = (1. / mucov)* t1 + (1. - 1. / mucov)* t2;
-    if(ccov >= 0)
+    if (ccov >= 0)
       ccov *= t2;
-    if(ccov < 0 || ccov > 1)
+    if (ccov < 0 || ccov > 1)
       ccov = t2;
 
-    if(diagonalCov < 0)
+    if (diagonalCov < 0)
       diagonalCov = 2 + 100. * N / sqrt((double) lambda);
 
-    if(stopMaxFunEvals <= 0)
+    if (stopMaxFunEvals <= 0)
       stopMaxFunEvals = facmaxeval * 900 * (N + 3)*(N + 3);
     else
       stopMaxFunEvals *= facmaxeval;
 
-    if(stopMaxIter <= 0)
+    if (stopMaxIter <= 0)
       stopMaxIter = ceil((double) (stopMaxFunEvals / lambda));
 
-    if(damps < double(0))
+    if (damps < double(0))
       damps = double(1);
     damps = damps
         * (double(1) + double(2)*std::max(double(0), std::sqrt((mueff - double(1)) / (N + double(1))) - double(1)))
@@ -187,10 +187,10 @@ namespace optimization {
           (double) N / (double(1e-6) + std::min(stopMaxIter, stopMaxFunEvals / lambda)))
         + cs;
 
-    if(updateCmode.modulo < 0)
+    if (updateCmode.modulo < 0)
       updateCmode.modulo = 1. / ccov / (double) N / 10.;
     updateCmode.modulo *= facupdateCmode;
-    if(updateCmode.maxtime < 0)
+    if (updateCmode.maxtime < 0)
       updateCmode.maxtime = 0.20; // maximal 20% of CPU-time
   
   }
@@ -211,7 +211,7 @@ namespace optimization {
     // evaluate the new search points using the given evaluate function by the user
     for (int i = 0; i < lambda; ++i)
     {
-      for(int j=0; j<N; j++) fit(0,j) = pop[i][j];
+      for (int j=0; j<N; j++) fit(0,j) = pop[i][j];
 
       arFunvals[i] = function.Evaluate(fit);
     }
@@ -223,7 +223,7 @@ namespace optimization {
   std::cout << "Stop:" << std::endl << getStopMessage();
 
   // get best estimator for the optimum
-  for(int i=0; i<N; i++) arr[i] = xmean[i]; 
+  for (int i=0; i<N; i++) arr[i] = xmean[i]; 
 
   return xBestEver[N];
 
@@ -243,8 +243,8 @@ namespace optimization {
      arma::mat eigMat;
 
      arma::mat cov(N,N);
-     for(int i=0; i<N; i++)
-      for(int j=0; j<=i; j++) cov(i,j)=cov(j,i)=C[i][j];
+     for (int i=0; i<N; i++)
+      for (int j=0; j<=i; j++) cov(i,j)=cov(j,i)=C[i][j];
 
 
    if (!arma::eig_sym(eV, eigMat, cov))
@@ -274,7 +274,7 @@ namespace optimization {
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < N; ++j) {
         double cc = 0., dd = 0.;
-        for(int k = 0; k < N; ++k)
+        for (int k = 0; k < N; ++k)
         {
           cc += diag[k]*Q[i][k]*Q[j][k];
           dd += Q[i][k]*Q[j][k];
@@ -282,7 +282,7 @@ namespace optimization {
         // check here, is the normalization the right one?
         const bool cond1 = fabs(cc - C[i > j ? i : j][i > j ? j : i]) / sqrt(C[i][i]* C[j][j]) > double(1e-10);
         const bool cond2 = fabs(cc - C[i > j ? i : j][i > j ? j : i]) > double(3e-14);
-        if(cond1 && cond2)
+        if (cond1 && cond2)
         {
           std::stringstream s;
           s << i << " " << j << ": " << cc << " " << C[i > j ? i : j][i > j ? j : i]
@@ -292,7 +292,7 @@ namespace optimization {
                 << std::endl;
           ++res;
         }
-        if(std::fabs(dd - (i == j)) > double(1e-10))
+        if (std::fabs(dd - (i == j)) > double(1e-10))
         {
           std::stringstream s;
           s << i << " " << j << " " << dd;
@@ -310,11 +310,11 @@ namespace optimization {
   void CMAES<funcType>::sortIndex(const double* rgFunVal, int* iindex, int n)
   {
     int i, j;
-    for(i = 1, iindex[0] = 0; i < n; ++i)
+    for (i = 1, iindex[0] = 0; i < n; ++i)
     {
-      for(j = i; j > 0; --j)
+      for (j = i; j > 0; --j)
       {
-        if(rgFunVal[iindex[j - 1]] < rgFunVal[i])
+        if (rgFunVal[iindex[j - 1]] < rgFunVal[i])
           break;
         iindex[j] = iindex[j - 1];
       }
@@ -327,7 +327,7 @@ namespace optimization {
   {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
-    if(ccov != double(0))
+    if (ccov != double(0))
     {
       // definitions for speeding up inner-most loop
       const double mucovinv = double(1)/mucov;
@@ -341,12 +341,12 @@ namespace optimization {
       eigensysIsUptodate = false;
 
       // update covariance matrix
-      for(int i = 0; i < N; ++i)
-        for(int j = diag ? i : 0; j <= i; ++j)
+      for (int i = 0; i < N; ++i)
+        for (int j = diag ? i : 0; j <= i; ++j)
         {
           double& Cij = C[i][j];
           Cij = onemccov1ccovmu*Cij + ccov1 * (pc[i]*pc[j] + longFactor*Cij);
-          for(int k = 0; k < mu; ++k)
+          for (int k = 0; k < mu; ++k)
           { // additional rank mu update
             const double* rgrgxindexk = population[index[k]];
             Cij += ccovmu*weights[k] * (rgrgxindexk[i] - xold[i])
@@ -355,12 +355,12 @@ namespace optimization {
         }
       // update maximal and minimal diagonal value
       maxdiagC = mindiagC = C[0][0];
-      for(int i = 1; i < N; ++i)
+      for (int i = 1; i < N; ++i)
       {
         const double& Cii = C[i][i];
-        if(maxdiagC < Cii)
+        if (maxdiagC < Cii)
           maxdiagC = Cii;
-        else if(mindiagC > Cii)
+        else if (mindiagC > Cii)
           mindiagC = Cii;
       }
     }
@@ -372,10 +372,10 @@ namespace optimization {
   template<typename funcType>
   void CMAES<funcType>::testMinStdDevs(void)
   {
-    if(!this->rgDiffMinChange)
+    if (!this->rgDiffMinChange)
       return;
 
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       while(this->sigma*std::sqrt(this->C[i][i]) < this->rgDiffMinChange[i])
         this->sigma *= std::exp(double(0.05) + this->cs / this->damps);
   }
@@ -388,12 +388,12 @@ namespace optimization {
   template<typename funcType>
   void CMAES<funcType>::addMutation(double* x, double eps)
   {
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       tempRandom[i] = rgD[i]*rand.gauss();
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       double sum = 0.0;
-      for(int j = 0; j < N; ++j)
+      for (int j = 0; j < N; ++j)
         sum += B[i][j]*tempRandom[j];
       x[i] = xmean[i] + eps*sigma*sum;
     }
@@ -412,7 +412,7 @@ namespace optimization {
     stopMessage = "";
 
     double trace(0);
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       trace += rgInitialStds[i]*rgInitialStds[i];
     sigma = std::sqrt(trace/N);
 
@@ -422,8 +422,8 @@ namespace optimization {
     genOfEigensysUpdate = 0;
 
     double dtest;
-    for(dtest = double(1); dtest && dtest < double(1.1)*dtest; dtest *= double(2))
-      if(dtest == dtest + double(1))
+    for (dtest = double(1); dtest && dtest < double(1.1)*dtest; dtest *= double(2))
+      if (dtest == dtest + double(1))
         break;
     dMaxSignifKond = dtest / double(1000);
 
@@ -461,37 +461,37 @@ namespace optimization {
     funcValueHistory[0] = (double) historySize;
     funcValueHistory++;
 
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       C[i] = new double[i+1];
       B[i] = new double[N];
     }
     index = new int[lambda];
-    for(int i = 0; i < lambda; ++i)
+    for (int i = 0; i < lambda; ++i)
         index[i] = i;
     population = new double*[lambda];
-    for(int i = 0; i < lambda; ++i)
+    for (int i = 0; i < lambda; ++i)
     {
       population[i] = new double[N+2];
       population[i][0] = N;
       population[i]++;
-      for(int j = 0; j < N; j++)
+      for (int j = 0; j < N; j++)
         population[i][j] = 0.0;
     }
 
-    for(int i = 0; i < lambda; i++)
+    for (int i = 0; i < lambda; i++)
     {
       functionValues[i] = std::numeric_limits<double>::max();
     }
-    for(int i = 0; i < historySize; i++)
+    for (int i = 0; i < historySize; i++)
     {
       funcValueHistory[i] = std::numeric_limits<double>::max();
     }
-    for(int i = 0; i < N; ++i)
-      for(int j = 0; j < i; ++j)
+    for (int i = 0; i < N; ++i)
+      for (int j = 0; j < i; ++j)
         C[i][j] = B[i][j] = B[j][i] = 0.;
 
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       B[i][i] = double(1);
       C[i][i] = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
@@ -504,15 +504,15 @@ namespace optimization {
     maxEW = maxEW*maxEW;
 
     maxdiagC = C[0][0];
-    for(int i = 1; i < N; ++i) if(maxdiagC < C[i][i]) maxdiagC = C[i][i];
+    for (int i = 1; i < N; ++i) if (maxdiagC < C[i][i]) maxdiagC = C[i][i];
     mindiagC = C[0][0];
-    for(int i = 1; i < N; ++i) if(mindiagC > C[i][i]) mindiagC = C[i][i];
+    for (int i = 1; i < N; ++i) if (mindiagC > C[i][i]) mindiagC = C[i][i];
 
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       xmean[i] = xold[i] = xstart[i];
     
-    if(typicalXcase)
-      for(int i = 0; i < N; ++i)
+    if (typicalXcase)
+      for (int i = 0; i < N; ++i)
         xmean[i] += sigma*rgD[i]*rand.gauss();
 
     return publicFitness;
@@ -530,13 +530,13 @@ namespace optimization {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
     // calculate eigensystem
-    if(!eigensysIsUptodate)
+    if (!eigensysIsUptodate)
     {
-      if(!diag)
+      if (!diag)
         updateEigensystem(false);
       else
       {
-        for(int i = 0; i < N; ++i)
+        for (int i = 0; i < N; ++i)
           rgD[i] = std::sqrt(C[i][i]);
         minEW = minElement(rgD, N);
         minEW *= minEW;
@@ -548,25 +548,25 @@ namespace optimization {
 
     testMinStdDevs();
 
-    for(int iNk = 0; iNk < lambda; ++iNk)
+    for (int iNk = 0; iNk < lambda; ++iNk)
     { // generate scaled random vector D*z
       double* rgrgxink = population[iNk];
-      for(int i = 0; i < N; ++i)
-        if(diag)
+      for (int i = 0; i < N; ++i)
+        if (diag)
           rgrgxink[i] = xmean[i] + sigma*rgD[i]*rand.gauss();
         else
           tempRandom[i] = rgD[i]*rand.gauss();
-      if(!diag)
-        for(int i = 0; i < N; ++i) // add mutation sigma*B*(D*z)
+      if (!diag)
+        for (int i = 0; i < N; ++i) // add mutation sigma*B*(D*z)
         {
           double sum = 0.0;
-          for(int j = 0; j < N; ++j)
+          for (int j = 0; j < N; ++j)
             sum += B[i][j]*tempRandom[j];
           rgrgxink[i] = xmean[i] + sigma*sum;
         }
     }
 
-    if(state == UPDATED || gen == 0)
+    if (state == UPDATED || gen == 0)
       ++gen;
     state = SAMPLED;
 
@@ -610,7 +610,7 @@ namespace optimization {
    template<typename funcType>
   double* CMAES<funcType>::sampleSingleInto(double* x)
   {
-    if(!x)
+    if (!x)
       x = new double[N];
     addMutation(x);
     return x;
@@ -649,7 +649,7 @@ namespace optimization {
    template<typename funcType>
   double* CMAES<funcType>:: perturbSolutionInto(double* x, double const* pxmean, double eps)
   {
-    if(!x)
+    if (!x)
       x = new double[N];
     assert(pxmean && "perturbSolutionInto(): pxmean was not given");
     addMutation(x, eps);
@@ -673,19 +673,19 @@ namespace optimization {
           "samplePopulation() before update can take place.");
     assert(fitnessValues && "updateDistribution(): No fitness function value array input.");
 
-    if(state == SAMPLED) // function values are delivered here
+    if (state == SAMPLED) // function values are delivered here
       countevals += lambda;
     else std::cout<<  "updateDistribution(): unexpected state" << std::endl;
 
     // assign function values
-    for(int i = 0; i < lambda; ++i)
+    for (int i = 0; i < lambda; ++i)
       population[i][N] = functionValues[i] = fitnessValues[i];
 
     // Generate index
     sortIndex(fitnessValues, index, lambda);
 
     // Test if function values are identical, escape flat fitness
-    if(fitnessValues[index[0]] == fitnessValues[index[(int) lambda / 2]])
+    if (fitnessValues[index[0]] == fitnessValues[index[(int) lambda / 2]])
     {
       sigma *= std::exp(double(0.2) + cs / damps);
      
@@ -695,13 +695,13 @@ namespace optimization {
     }
 
     // update function value history
-    for(int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
+    for (int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
       funcValueHistory[i] = funcValueHistory[i - 1];
     funcValueHistory[0] = fitnessValues[index[0]];
 
     // update xbestever
-    if(xBestEver[N] > population[index[0]][N] || gen == 1)
-      for(int i = 0; i <= N; ++i)
+    if (xBestEver[N] > population[index[0]][N] || gen == 1)
+      for (int i = 0; i <= N; ++i)
       {
         xBestEver[i] = population[index[0]][i];
         xBestEver[N+1] = countevals;
@@ -709,25 +709,25 @@ namespace optimization {
 
     const double sqrtmueffdivsigma = std::sqrt(mueff) / sigma;
     // calculate xmean and rgBDz~N(0,C)
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       xold[i] = xmean[i];
       xmean[i] = 0.;
-      for(int iNk = 0; iNk < mu; ++iNk)
+      for (int iNk = 0; iNk < mu; ++iNk)
         xmean[i] += weights[iNk]*population[index[iNk]][i];
       BDz[i] = sqrtmueffdivsigma*(xmean[i]-xold[i]);
     }
 
     // calculate z := D^(-1)* B^(-1)* rgBDz into rgdTmp
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       double sum;
-      if(diag)
+      if (diag)
         sum = BDz[i];
       else
       {
         sum = 0.;
-        for(int j = 0; j < N; ++j)
+        for (int j = 0; j < N; ++j)
           sum += B[j][i]*BDz[j];
       }
       tempRandom[i] = sum/rgD[i];
@@ -736,16 +736,16 @@ namespace optimization {
     // cumulation for sigma (ps) using B*z
     const double sqrtFactor = std::sqrt(cs*(double(2)-cs));
     const double invps = double(1)-cs;
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       double sum;
-      if(diag)
+      if (diag)
         sum = tempRandom[i];
       else
       {
         sum = double(0);
         double* Bi = B[i];
-        for(int j = 0; j < N; ++j)
+        for (int j = 0; j < N; ++j)
           sum += Bi[j]*tempRandom[j];
       }
       ps[i] = invps*ps[i] + sqrtFactor*sum;
@@ -753,7 +753,7 @@ namespace optimization {
 
     // calculate norm(ps)^2
     double psxps(0);
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       const double& rgpsi = ps[i];
       psxps += rgpsi*rgpsi;
@@ -764,7 +764,7 @@ namespace optimization {
         / chiN < double(1.4) + double(2) / (N + 1);
     const double ccumcovinv = 1.-ccumcov;
     const double hsigFactor = hsig*std::sqrt(ccumcov*(double(2)-ccumcov));
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       pc[i] = ccumcovinv*pc[i] + hsigFactor*BDz[i];
 
     // update of C
@@ -794,13 +794,13 @@ namespace optimization {
 
     std::stringstream message;
 
-    if(stopMessage != "")
+    if (stopMessage != "")
     {
       message << stopMessage << std::endl;
     }
 
     // function value reached
-    if((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
+    if ((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
         functionValues[index[0]] <= stStopFitness.val)
     {
       message << "Fitness: function value " << functionValues[index[0]]
@@ -813,38 +813,38 @@ namespace optimization {
         std::min(minElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
         minElement(functionValues, lambda));
 
-    if(gen > 0 && range <= stopTolFun)
+    if (gen > 0 && range <= stopTolFun)
     {
       message << "TolFun: function value differences " << range
           << " < stopTolFun=" << stopTolFun << std::endl;
     }
 
     // TolFunHist
-    if(gen > *(funcValueHistory - 1))
+    if (gen > *(funcValueHistory - 1))
     {
       range = maxElement(funcValueHistory, (int) *(funcValueHistory - 1))
           - minElement(funcValueHistory, (int) *(funcValueHistory - 1));
-      if(range <= stopTolFunHist)
+      if (range <= stopTolFunHist)
         message << "TolFunHist: history of function value changes " << range
             << " stopTolFunHist=" << stopTolFunHist << std::endl;
     }
 
     // TolX
     int cTemp = 0;
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       cTemp += (sigma*std::sqrt(C[i][i]) < stopTolX) ? 1 : 0;
       cTemp += (sigma*pc[i] < stopTolX) ? 1 : 0;
     }
-    if(cTemp == 2*N)
+    if (cTemp == 2*N)
     {
       message << "TolX: object variable changes below " << stopTolX << std::endl;
     }
 
     // TolUpX
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
-      if(sigma*std::sqrt(C[i][i]) > stopTolUpXFactor*rgInitialStds[i])
+      if (sigma*std::sqrt(C[i][i]) > stopTolUpXFactor*rgInitialStds[i])
       {
         message << "TolUpX: standard deviation increased by more than "
             << stopTolUpXFactor << ", larger initial standard deviation recommended."
@@ -854,7 +854,7 @@ namespace optimization {
     }
 
     // Condition of C greater than dMaxSignifKond
-    if(maxEW >= minEW* dMaxSignifKond)
+    if (maxEW >= minEW* dMaxSignifKond)
     {
       message << "ConditionNumber: maximal condition number " << dMaxSignifKond
           << " reached. maxEW=" << maxEW <<  ",minEW=" << minEW << ",maxdiagC="
@@ -862,17 +862,17 @@ namespace optimization {
     }
 
     // Principal axis i has no effect on xmean, ie. x == x + 0.1* sigma* rgD[i]* B[i]
-    if(!diag)
+    if (!diag)
     {
-      for(iAchse = 0; iAchse < N; ++iAchse)
+      for (iAchse = 0; iAchse < N; ++iAchse)
       {
         fac = 0.1* sigma* rgD[iAchse];
-        for(iKoo = 0; iKoo < N; ++iKoo)
+        for (iKoo = 0; iKoo < N; ++iKoo)
         {
-          if(xmean[iKoo] != xmean[iKoo] + fac* B[iKoo][iAchse])
+          if (xmean[iKoo] != xmean[iKoo] + fac* B[iKoo][iAchse])
             break;
         }
-        if(iKoo == N)
+        if (iKoo == N)
         {
           message << "NoEffectAxis: standard deviation 0.1*" << (fac / 0.1)
               << " in principal axis " << iAchse << " without effect" << std::endl;
@@ -881,9 +881,9 @@ namespace optimization {
       }
     }
     // Component of xmean is not changed anymore
-    for(iKoo = 0; iKoo < N; ++iKoo)
+    for (iKoo = 0; iKoo < N; ++iKoo)
     {
-      if(xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt(C[iKoo][iKoo])/double(5))
+      if (xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt(C[iKoo][iKoo])/double(5))
       {
         message << "NoEffectCoordinate: standard deviation 0.2*"
             << (sigma*std::sqrt(C[iKoo][iKoo])) << " in coordinate " << iKoo
@@ -892,12 +892,12 @@ namespace optimization {
       }
     }
 
-    if(countevals >= stopMaxFunEvals)
+    if (countevals >= stopMaxFunEvals)
     {
       message << "MaxFunEvals: conducted function evaluations " << countevals
           << " >= " << stopMaxFunEvals << std::endl;
     }
-    if(gen >= stopMaxIter)
+    if (gen >= stopMaxIter)
     {
       message << "MaxIter: number of iterations " << gen << " >= "
           << stopMaxIter << std::endl;
@@ -917,12 +917,12 @@ namespace optimization {
    template<typename funcType>
    void CMAES<funcType>::updateEigensystem(bool force)
   {
-    if(!force)
+    if (!force)
     {
-      if(eigensysIsUptodate)
+      if (eigensysIsUptodate)
         return;
       // return on modulo generation number
-      if(gen < genOfEigensysUpdate + updateCmode.modulo)
+      if (gen < genOfEigensysUpdate + updateCmode.modulo)
         return;
     }
 
@@ -932,10 +932,10 @@ namespace optimization {
     minEW = minElement(rgD, N);
     maxEW = maxElement(rgD, N);
 
-    if(doCheckEigen) // needs O(n^3)! writes, in case, error message in error file
+    if (doCheckEigen) // needs O(n^3)! writes, in case, error message in error file
       checkEigen(rgD, B);
 
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       rgD[i] = std::sqrt(rgD[i]);
 
     eigensysIsUptodate = true;
@@ -954,8 +954,8 @@ namespace optimization {
     assert(state != SAMPLED && "setMean: mean cannot be set inbetween the calls"
         "of samplePopulation and updateDistribution");
 
-    if(newxmean && newxmean != xmean)
-      for(int i = 0; i < N; ++i)
+    if (newxmean && newxmean != xmean)
+      for (int i = 0; i < N; ++i)
         xmean[i] = newxmean[i];
     else
       newxmean = xmean;
@@ -978,12 +978,12 @@ namespace optimization {
     delete[] --xBestEver;
     delete[] --output;
     delete[] rgD;
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       delete[] C[i];
       delete[] B[i];
     }
-    for(int i = 0; i < lambda; ++i)
+    for (int i = 0; i < lambda; ++i)
       delete[] --population[i];
     delete[] population;
     delete[] C;
@@ -993,11 +993,11 @@ namespace optimization {
     delete[] --functionValues;
     delete[] --funcValueHistory;
 
-    if(rgInitialStds)
+    if (rgInitialStds)
       delete[] rgInitialStds;
-    if(rgDiffMinChange)
+    if (rgDiffMinChange)
       delete[] rgDiffMinChange;
-    if(weights)
+    if (weights)
       delete[] weights;
   }
 

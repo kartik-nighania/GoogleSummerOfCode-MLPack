@@ -43,25 +43,25 @@ public:
 
   void getInitialStart(double *arr, size_t dimension)
   { 
-    for(int i=0; i<N; i++) arr[i] = xstart[i];
+    for (int i=0; i<N; i++) arr[i] = xstart[i];
   }
   
    void getInitialStandardDeviations(double *arr, size_t dimension)
   { 
 
-    for(int i=0; i<N; i++) arr[i] = rgInitialStds[i];
+    for (int i=0; i<N; i++) arr[i] = rgInitialStds[i];
   }
 
     void getStandardDeviations(double *arr)
   { 
   
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     arr[i] = sigma*std::sqrt(C[i][i]);    
   }
 
   void getXBestEver(double *arr)
   { 
-    for(int i = 0; i < N; ++i) arr[i] = xBestEver[i];    
+    for (int i = 0; i < N; ++i) arr[i] = xBestEver[i];    
   }
 
 
@@ -150,19 +150,19 @@ double minStdDev(){return sigma*std::sqrt(mindiagC);}
 
 void diagonalCovariance(double *arr)
   {
-     for(int i = 0; i < N; ++i) arr[i] = C[i][i];
+     for (int i = 0; i < N; ++i) arr[i] = C[i][i];
   }
 
-  void diagonalD(double *arr, size_t N) { for(int i = 0; i < N; ++i) arr[i] = rgD[i]; }
+  void diagonalD(double *arr, size_t N) { for (int i = 0; i < N; ++i) arr[i] = rgD[i]; }
 
   void standardDeviation(double *arr, size_t N)
   {
-    for(int i = 0; i < N; ++i) arr[i] = sigma*std::sqrt(C[i][i]);
+    for (int i = 0; i < N; ++i) arr[i] = sigma*std::sqrt(C[i][i]);
   }
 
 void getFittestMean(double *arr)
 { 
-  for(int i=0; i<N; i++) arr[i] = xmean[i]; 
+  for (int i=0; i<N; i++) arr[i] = xmean[i]; 
 }
 
  
