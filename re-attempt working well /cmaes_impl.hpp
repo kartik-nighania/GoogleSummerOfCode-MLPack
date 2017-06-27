@@ -87,7 +87,7 @@ namespace optimization {
 
     diagonalCov = 0; // default is 0, but this might change in future
 
-      xstart = new double[N];
+      xstart.set_size(N);
       if (startP)
       {
         for (int i = 0; i < N; ++i) xstart[i] = start[i];
@@ -429,7 +429,7 @@ namespace optimization {
     state = INITIALIZED;
     dLastMinEWgroesserNull = double(1);
 
-    pc = new double[N];
+    pc.set_size(N);
     ps = new double[N];
     tempRandom = new double[N+1];
     BDz = new double[N];

@@ -206,9 +206,7 @@ private:
   //! Problem dimension, must stay constant.
   int N;
   //! Initial search space vector.
-  double* xstart;
-  //! A typical value for a search space vector.
-  double* typicalX;
+  arma::vec xstart;
   //! Indicates that the typical x is the initial point.
   bool typicalXcase;
   //! Initial standard deviations.
@@ -294,7 +292,7 @@ private:
   //! Axis lengths.
   double* rgD;
   //! Anisotropic evolution path (for covariance).
-  double* pc;
+  arma::vec pc;
   //! Isotropic evolution path (for step length).
   double* ps;
   //! Last mean.
