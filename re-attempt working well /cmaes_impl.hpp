@@ -48,7 +48,6 @@ namespace optimization {
         mu(-1),
         mucov(-1),
         mueff(-1),
-        weights(0),
         damps(-1),
         cs(-1),
         ccumcov(-1),
@@ -114,10 +113,7 @@ namespace optimization {
       lambda = 4 + (int) (3.0*log((double) N));
     if (mu <= 0)
       mu = lambda / 2;
-    if (!weights)
-     {
-     if (weights)
-        delete[] weights;
+
       weights = new double[mu];
       switch(weightMode)
       {
@@ -146,7 +142,7 @@ namespace optimization {
 
       if (mu < 1 || mu > lambda || (mu == lambda && weights[0] == weights[mu - 1]))
         throw std::runtime_error("setWeights(): invalid setting of mu or lambda");
-    }
+    
 
     if (cs > 0)
       cs *= (mueff + 2.) / (N + mueff + 3.);
