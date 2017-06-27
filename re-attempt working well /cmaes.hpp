@@ -276,7 +276,7 @@ private:
   //! Mean x vector, "parent".
   arma::vec xmean;
   //! Best sample ever.
-  double* xBestEver;
+  arma::vec xBestEver;
   //! x-vectors, lambda offspring.
   double** population;
   //! Sorting index of sample population.
@@ -300,7 +300,7 @@ private:
   //! B*D*z.
   arma::vec BDz;
   //! Temporary (random) vector used in different places.
-  double* tempRandom;
+  arma::vec tempRandom;
   //! Objective function values of the population.
   double* functionValues;
   //!< Public objective function value array returned by init().

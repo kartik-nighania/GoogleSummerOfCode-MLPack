@@ -431,7 +431,7 @@ namespace optimization {
 
     pc.set_size(N);
     ps.set_size(N);
-    tempRandom = new double[N+1];
+    tempRandom.set_size(N+1);
     BDz.set_size(N);
     xmean.set_size(N+2);
     xmean[0] = N;
@@ -439,7 +439,7 @@ namespace optimization {
     xold.set_size(N+2);
     xold[0] = N;
     ++xold;
-    xBestEver = new double[N+3];
+    xBestEver.set_size(N+3);
     xBestEver[0] = N;
     ++xBestEver;
     xBestEver[N] = std::numeric_limits<double>::max();
