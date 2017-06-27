@@ -413,7 +413,7 @@ namespace optimization {
     double trace = arma::accu(arma::pow(rgInitialStds, 2));
     sigma = std::sqrt(trace/N);
 
-    chiN = std::sqrt((double) N) * (double(1) - double(1)/(double(4)*N) + double(1)/(double(21)*N*N));
+    chiN = std::sqrt((double) N) * (1 - 1/(4*N) + 1/(21*N*N));
     eigensysIsUptodate = true;
     doCheckEigen = false;
     genOfEigensysUpdate = 0;
@@ -989,7 +989,7 @@ namespace optimization {
     delete[] publicFitness;
     delete[] --functionValues;
     delete[] --funcValueHistory;
-    
+
     if (rgDiffMinChange)
       delete[] rgDiffMinChange;
     if (weights)
