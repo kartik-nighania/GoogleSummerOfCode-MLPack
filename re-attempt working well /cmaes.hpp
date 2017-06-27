@@ -294,11 +294,9 @@ private:
   //! Anisotropic evolution path (for covariance).
   arma::vec pc;
   //! Isotropic evolution path (for step length).
-  double* ps;
+  arma::vec ps;
   //! Last mean.
-  double* xold;
-  //! Output vector.
-  double* output;
+  arma::vec xold;
   //! B*D*z.
   double* BDz;
   //! Temporary (random) vector used in different places.

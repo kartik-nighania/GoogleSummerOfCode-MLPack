@@ -430,22 +430,19 @@ namespace optimization {
     dLastMinEWgroesserNull = double(1);
 
     pc.set_size(N);
-    ps = new double[N];
+    ps.set_size(N);
     tempRandom = new double[N+1];
     BDz = new double[N];
     xmean.set_size(N+2);
     xmean[0] = N;
     ++xmean;
-    xold = new double[N+2];
+    xold.set_size(N+2);
     xold[0] = N;
     ++xold;
     xBestEver = new double[N+3];
     xBestEver[0] = N;
     ++xBestEver;
     xBestEver[N] = std::numeric_limits<double>::max();
-    output = new double[N+2];
-    output[0] = N;
-    ++output;
     rgD = new double[N];
     C = new double*[N];
     B = new double*[N];
