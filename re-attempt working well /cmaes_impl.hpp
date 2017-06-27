@@ -432,7 +432,7 @@ namespace optimization {
     pc.set_size(N);
     ps.set_size(N);
     tempRandom = new double[N+1];
-    BDz = new double[N];
+    BDz.set_size(N);
     xmean.set_size(N+2);
     xmean[0] = N;
     ++xmean;

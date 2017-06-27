@@ -298,7 +298,7 @@ private:
   //! Last mean.
   arma::vec xold;
   //! B*D*z.
-  double* BDz;
+  arma::vec BDz;
   //! Temporary (random) vector used in different places.
   double* tempRandom;
   //! Objective function values of the population.
