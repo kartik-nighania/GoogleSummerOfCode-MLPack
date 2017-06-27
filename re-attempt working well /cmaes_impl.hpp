@@ -36,7 +36,6 @@ namespace optimization {
       : function(function),
         N(-1),
         typicalXcase(false),
-        rgInitialStds(0),
         rgDiffMinChange(0),
         stopMaxFunEvals(-1),
         facmaxeval(1.0),
@@ -100,7 +99,7 @@ namespace optimization {
       }
   
 
-    rgInitialStds = new double[N];
+    rgInitialStds.set_size(N);
     if (initDev)
       {
         for (int i = 0; i < N; ++i) rgInitialStds[i] = stdDivs[i];
@@ -411,9 +410,7 @@ namespace optimization {
 
     stopMessage = "";
 
-    double trace(0);
-    for (int i = 0; i < N; ++i)
-      trace += rgInitialStds[i]*rgInitialStds[i];
+    double trace = arma::accu(arma::pow(rgInitialStds, 2));
     sigma = std::sqrt(trace/N);
 
     chiN = std::sqrt((double) N) * (double(1) - double(1)/(double(4)*N) + double(1)/(double(21)*N*N));
@@ -992,9 +989,7 @@ namespace optimization {
     delete[] publicFitness;
     delete[] --functionValues;
     delete[] --funcValueHistory;
-
-    if (rgInitialStds)
-      delete[] rgInitialStds;
+    
     if (rgDiffMinChange)
       delete[] rgDiffMinChange;
     if (weights)

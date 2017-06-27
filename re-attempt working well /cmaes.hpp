@@ -213,7 +213,7 @@ private:
   //! Indicates that the typical x is the initial point.
   bool typicalXcase;
   //! Initial standard deviations.
-  double* rgInitialStds;
+  arma::vec rgInitialStds;
   double* rgDiffMinChange;
 
   /* Termination parameters. */
