@@ -193,7 +193,6 @@ void getFittestMean(double *arr)
 
   void setWeights(Weights mode);
 
-  ~CMAES();
 
 private:
 
@@ -277,7 +276,7 @@ private:
   //! Step size.
   double sigma;
   //! Mean x vector, "parent".
-  double* xmean;
+  arma::vec xmean;
   //! Best sample ever.
   double* xBestEver;
   //! x-vectors, lambda offspring.
@@ -347,8 +346,7 @@ private:
    double* sampleSingleInto(double* x);
    double const* reSampleSingleOld(double* x);
    double* perturbSolutionInto(double* x, double const* pxmean, double eps);
-   double* updateDistribution(const double* fitnessValues);
-   double const* setMean(const double* newxmean);
+   void updateDistribution(const double* fitnessValues);
 
    bool testForTermination();
    int  checkEigen(double* diag, double** Q);

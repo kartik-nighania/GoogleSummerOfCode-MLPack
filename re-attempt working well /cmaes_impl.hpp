@@ -433,7 +433,7 @@ namespace optimization {
     ps = new double[N];
     tempRandom = new double[N+1];
     BDz = new double[N];
-    xmean = new double[N+2];
+    xmean.set_size(N+2);
     xmean[0] = N;
     ++xmean;
     xold = new double[N+2];
@@ -661,7 +661,7 @@ namespace optimization {
    * @return Mean value of the new distribution.
    */
    template<typename funcType>
-  double* CMAES<funcType>::updateDistribution(const double* fitnessValues)
+  void CMAES<funcType>::updateDistribution(const double* fitnessValues)
   {
 
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
@@ -771,7 +771,6 @@ namespace optimization {
     sigma *= std::exp(((std::sqrt(psxps) / chiN) - double(1))* cs / damps);
 
     state = UPDATED;
-    return xmean;
   }
 
   /**
@@ -939,62 +938,6 @@ namespace optimization {
     genOfEigensysUpdate = gen;
   }
 
-  /**
-   * Distribution mean could be changed before samplePopulation(). This might
-   * lead to unexpected behaviour if done repeatedly.
-   * @param newxmean new mean, if it is NULL, it will be set to the current mean
-   * @return new mean
-   */
-   template<typename funcType>
-  double const* CMAES<funcType>:: setMean(const double* newxmean)
-  {
-    assert(state != SAMPLED && "setMean: mean cannot be set inbetween the calls"
-        "of samplePopulation and updateDistribution");
-
-    if (newxmean && newxmean != xmean)
-      for (int i = 0; i < N; ++i)
-        xmean[i] = newxmean[i];
-    else
-      newxmean = xmean;
-
-    return newxmean;
-  }
-
-    /**
-   * Free the memory.
-   */
-   template<typename funcType>
-   CMAES<funcType>::~CMAES()
-  {
-    delete[] pc;
-    delete[] ps;
-    delete[] tempRandom;
-    delete[] BDz;
-    delete[] --xmean;
-    delete[] --xold;
-    delete[] --xBestEver;
-    delete[] --output;
-    delete[] rgD;
-    for (int i = 0; i < N; ++i)
-    {
-      delete[] C[i];
-      delete[] B[i];
-    }
-    for (int i = 0; i < lambda; ++i)
-      delete[] --population[i];
-    delete[] population;
-    delete[] C;
-    delete[] B;
-    delete[] index;
-    delete[] publicFitness;
-    delete[] --functionValues;
-    delete[] --funcValueHistory;
-
-    if (rgDiffMinChange)
-      delete[] rgDiffMinChange;
-    if (weights)
-      delete[] weights;
-  }
 
 
 } //namespace optimizer
