@@ -193,8 +193,8 @@ namespace optimization {
   template<typename funcType>
   double CMAES<funcType>::Optimize(arma::mat& arr)
   {
-
-  arFunvals = init();
+    arFunvals.set_size(lambda);
+    init(arFunvals);
 
   while(!testForTermination())
   {
@@ -302,7 +302,7 @@ namespace optimization {
 
 
    template<typename funcType>
-  void CMAES<funcType>::sortIndex(const double* rgFunVal, int* iindex, int n)
+  void CMAES<funcType>::sortIndex(const arma::vec rgFunVal, int* iindex, int n)
   {
     int i, j;
     for (i = 1, iindex[0] = 0; i < n; ++i)
@@ -401,7 +401,7 @@ namespace optimization {
    *         pass them to updateDistribution()
    */
   template<typename funcType>
-  double* CMAES<funcType>::init()
+  void CMAES<funcType>::init(arma::vec& func)
   {
 
     stopMessage = "";
@@ -505,7 +505,7 @@ namespace optimization {
       for (int i = 0; i < N; ++i)
         xmean[i] += sigma*rgD[i]*rand.gauss();
 
-    return publicFitness;
+    for(int i=0; i<lambda; i++) func[i] = publicFitness[i];
   }
 
   /**
@@ -654,14 +654,13 @@ namespace optimization {
    * @return Mean value of the new distribution.
    */
    template<typename funcType>
-  void CMAES<funcType>::updateDistribution(const double* fitnessValues)
+  void CMAES<funcType>::updateDistribution(arma::vec fitnessValues)
   {
 
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
     assert(state != UPDATED && "updateDistribution(): You need to call "
           "samplePopulation() before update can take place.");
-    assert(fitnessValues && "updateDistribution(): No fitness function value array input.");
 
     if (state == SAMPLED) // function values are delivered here
       countevals += lambda;

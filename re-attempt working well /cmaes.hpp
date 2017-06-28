@@ -200,7 +200,7 @@ private:
   //! The instantiated function.
   funcType& function;
 
-  double *arFunvals;
+  arma::vec arFunvals;
 
   double *const*pop;
   //! Problem dimension, must stay constant.
@@ -331,18 +331,18 @@ private:
   
   void eigen(double* diag, double** Q);
   void updateEigensystem(bool force);
-  void sortIndex(const double* rgFunVal, int* iindex, int n);
+  void sortIndex(const arma::vec rgFunVal, int* iindex, int n);
   void adaptC2(const int hsig);
   void testMinStdDevs(void);
   void addMutation(double* x, double eps = 1.0);
 
-   double* init();
+   void init(arma::vec& func);
    double* const* samplePopulation();
    double* const* reSampleSingle(int i);
    double* sampleSingleInto(double* x);
    double const* reSampleSingleOld(double* x);
    double* perturbSolutionInto(double* x, double const* pxmean, double eps);
-   void updateDistribution(const double* fitnessValues);
+   void updateDistribution(const arma::vec fitnessValues);
 
    bool testForTermination();
    int  checkEigen(double* diag, double** Q);
