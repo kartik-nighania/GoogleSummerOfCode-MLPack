@@ -338,9 +338,6 @@ private:
 
    void init(arma::vec& func);
    double* const* samplePopulation();
-   double* const* reSampleSingle(int i);
-   double* sampleSingleInto(double* x);
-   double const* reSampleSingleOld(double* x);
    double* perturbSolutionInto(double* x, double const* pxmean, double eps);
    void updateDistribution(const arma::vec fitnessValues);
 

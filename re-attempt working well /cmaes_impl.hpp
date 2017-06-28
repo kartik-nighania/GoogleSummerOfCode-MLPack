@@ -562,67 +562,7 @@ namespace optimization {
 
     return population;
   }
-
-  /**
-   * Can be called after samplePopulation() to resample single solutions of the
-   * population as often as desired. Useful to implement a box constraints
-   * (boundary) handling.
-   * @param i Index to an element of the returned value of samplePopulation().
-   *          population[index] will be resampled where \f$0\leq i<\lambda\f$
-   *          must hold.
-   * @return A pointer to the resampled "population".
-   */
-   template<typename funcType>
-  double* const* CMAES<funcType>::reSampleSingle(int i)
-  {
-    double* x;
-    assert(i >= 0 && i < lambda &&
-        "reSampleSingle(): index must be between 0 and sp.lambda");
-    x = population[i];
-    addMutation(x);
-    return population;
-  }
-
-  /**
-   * Can be called after samplePopulation() to resample single solutions. In
-   * general, the function can be used to sample as many independent
-   * mean+sigma*Normal(0,C) distributed vectors as desired.
-   *
-   * Input x can be a pointer to an element of the vector returned by
-   * samplePopulation() but this is inconsistent with the const qualifier of the
-   * returned value and therefore rather reSampleSingle() should be used.
-   * @param x Solution vector that gets sampled a new value. If x == NULL new
-   *          memory is allocated and must be released by the user using
-   *          delete[].
-   * @return A pointer to the resampled solution vector, equals input x for
-   *         x != NULL on input.
-   */
-   template<typename funcType>
-  double* CMAES<funcType>::sampleSingleInto(double* x)
-  {
-    if (!x)
-      x = new double[N];
-    addMutation(x);
-    return x;
-  }
-
-  /**
-   * Can be called after samplePopulation() to resample single solutions. In
-   * general, the function can be used to sample as many independent
-   * mean+sigma*Normal(0,C) distributed vectors as desired.
-   * @param x Element of the return value of samplePopulation(), that is
-   *          pop[0..\f$\lambda\f$]. This solution vector of the population gets
-   *          sampled a new value.
-   * @return A pointer to the resampled "population" member.
-   */
-   template<typename funcType>
-  double const* CMAES<funcType>::reSampleSingleOld(double* x)
-  {
-    assert(x && "reSampleSingleOld(): Missing input x");
-    addMutation(x);
-    return x;
-  }
-
+  
   /**
    * Used to reevaluate a slightly disturbed solution for an uncertaintly
    * measurement. In case if x == NULL on input, the memory of the returned x
