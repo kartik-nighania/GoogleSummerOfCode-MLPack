@@ -247,7 +247,7 @@ private:
   /**
    * Weights used to recombinate the mean sum up to one.
    */
-  double* weights;
+  arma::vec weights;
   /**
    * Damping parameter for step-size adaption, d = inifinity or 0 means adaption
    * is turned off, usually close to one.

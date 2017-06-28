@@ -114,7 +114,7 @@ namespace optimization {
     if (mu <= 0)
       mu = lambda / 2;
 
-      weights = new double[mu];
+      weights.set_size(mu);
       switch(weightMode)
       {
       case LINEAR_WEIGHTS:
