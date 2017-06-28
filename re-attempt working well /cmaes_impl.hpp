@@ -199,14 +199,14 @@ namespace optimization {
   while(!testForTermination())
   {
     // Generate lambda new search points, sample population
-    pop = samplePopulation();
+    samplePopulation();
 
     arma::mat fit(1,N);
 
     // evaluate the new search points using the given evaluate function by the user
     for (int i = 0; i < lambda; ++i)
     {
-      for (int j=0; j<N; j++) fit(0,j) = pop[i][j];
+      for (int j=0; j<N; j++) fit(0,j) = population[i][j];
 
       arFunvals[i] = function.Evaluate(fit);
     }
@@ -515,7 +515,7 @@ namespace optimization {
    * normally distributed samples.
    */
    template<typename funcType>
-  double* const* CMAES<funcType>::samplePopulation()
+   void CMAES<funcType>::samplePopulation()
   {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
@@ -560,9 +560,8 @@ namespace optimization {
       ++gen;
     state = SAMPLED;
 
-    return population;
   }
-  
+
   /**
    * Used to reevaluate a slightly disturbed solution for an uncertaintly
    * measurement. In case if x == NULL on input, the memory of the returned x

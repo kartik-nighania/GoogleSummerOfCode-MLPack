@@ -202,7 +202,6 @@ private:
 
   arma::vec arFunvals;
 
-  double *const*pop;
   //! Problem dimension, must stay constant.
   int N;
   //! Initial search space vector.
@@ -337,7 +336,7 @@ private:
   void addMutation(double* x, double eps = 1.0);
 
    void init(arma::vec& func);
-   double* const* samplePopulation();
+   void samplePopulation();
    double* perturbSolutionInto(double* x, double const* pxmean, double eps);
    void updateDistribution(const arma::vec fitnessValues);
 
