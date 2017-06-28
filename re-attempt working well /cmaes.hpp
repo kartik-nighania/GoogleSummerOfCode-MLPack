@@ -210,8 +210,6 @@ private:
   bool typicalXcase;
   //! Initial standard deviations.
   arma::vec rgInitialStds;
-  double* rgDiffMinChange;
-
   /* Termination parameters. */
   //! Maximal number of objective function evaluations.
   double stopMaxFunEvals;
@@ -332,7 +330,6 @@ private:
   void updateEigensystem(bool force);
   void sortIndex(const arma::vec rgFunVal, int* iindex, int n);
   void adaptC2(const int hsig);
-  void testMinStdDevs(void);
   void addMutation(double* x, double eps = 1.0);
 
    void init(arma::vec& func);

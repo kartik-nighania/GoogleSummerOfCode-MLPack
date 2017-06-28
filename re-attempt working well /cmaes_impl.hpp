@@ -36,12 +36,11 @@ namespace optimization {
       : function(function),
         N(-1),
         typicalXcase(false),
-        rgDiffMinChange(0),
         stopMaxFunEvals(-1),
         facmaxeval(1.0),
         stopMaxIter(-1.0),
-        stopTolFun(1e-15),
-        stopTolFunHist(1e-15),
+        stopTolFun(1e-16),
+        stopTolFunHist(1e-16),
         stopTolX(0), // 1e-11*insigma would also be reasonable
         stopTolUpXFactor(1e3),
         lambda(-1),
@@ -361,19 +360,6 @@ namespace optimization {
     }
   }
 
-  /**
-   * Treats minimal standard deviations and numeric problems. Increases sigma.
-   */
-  template<typename funcType>
-  void CMAES<funcType>::testMinStdDevs(void)
-  {
-    if (!this->rgDiffMinChange)
-      return;
-
-    for (int i = 0; i < N; ++i)
-      while(this->sigma*std::sqrt(this->C[i][i]) < this->rgDiffMinChange[i])
-        this->sigma *= std::exp(double(0.05) + this->cs / this->damps);
-  }
 
   /**
    * Adds the mutation sigma*B*(D*z).
@@ -535,8 +521,6 @@ namespace optimization {
         eigensysIsUptodate = true;
       }
     }
-
-    testMinStdDevs();
 
     for (int iNk = 0; iNk < lambda; ++iNk)
     { // generate scaled random vector D*z
