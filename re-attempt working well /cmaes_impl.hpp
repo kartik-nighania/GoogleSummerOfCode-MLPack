@@ -427,10 +427,8 @@ namespace optimization {
     maxEW = rgD.max();
     maxEW = maxEW*maxEW;
 
-    maxdiagC = C(0,0);
-    for (int i = 1; i < N; ++i) if (maxdiagC < C(i,i)) maxdiagC = C(i,i);
-    mindiagC = C(0,0);
-    for (int i = 1; i < N; ++i) if (mindiagC > C(i,i)) mindiagC = C(i,i);
+    maxdiagC = arma::max(C.diag());
+    mindiagC = arma::min(C.diag());
 
     for (int i = 0; i < N; ++i)
       xmean[i] = xold[i] = xstart[i];
