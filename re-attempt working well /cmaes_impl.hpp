@@ -316,15 +316,9 @@ namespace optimization {
           }
         }
       // update maximal and minimal diagonal value
-      maxdiagC = mindiagC = C(0,0);
-      for (int i = 1; i < N; ++i)
-      {
-        const double& Cii = C(i,i);
-        if (maxdiagC < Cii)
-          maxdiagC = Cii;
-        else if (mindiagC > Cii)
-          mindiagC = Cii;
-      }
+      maxdiagC = arma::max(C.diag());
+      mindiagC = arma::min(C.diag());
+     
     }
   }
 
