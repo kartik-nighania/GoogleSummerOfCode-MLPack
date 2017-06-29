@@ -238,7 +238,7 @@ namespace optimization {
 
      arma::mat cov(N,N);
      for (int i=0; i<N; i++)
-      for (int j=0; j<=i; j++) cov(i,j)=cov(j,i)=C[i][j];
+      for (int j=0; j<=i; j++) cov(i,j)=cov(j,i)=C(i,j);
 
 
    if (!arma::eig_sym(eV, eigMat, cov))
@@ -264,8 +264,9 @@ namespace optimization {
   {
     // compute Q diag Q^T and Q Q^T to check
     int res = 0;
-    for (int i = 0; i < N; ++i)
-      for (int j = 0; j < N; ++j) {
+    for (double i = 0; i < N; i+=1)
+      for (double j = 0; j < N; j+=1) 
+      {
         double cc = 0., dd = 0.;
         for (int k = 0; k < N; ++k)
         {
@@ -273,13 +274,13 @@ namespace optimization {
           dd += Q(i,k)*Q(j,k);
         }
         // check here, is the normalization the right one?
-        const bool cond1 = fabs(cc - C[i > j ? i : j][i > j ? j : i]) / sqrt(C[i][i]* C[j][j]) > double(1e-10);
-        const bool cond2 = fabs(cc - C[i > j ? i : j][i > j ? j : i]) > double(3e-14);
+        const bool cond1 = fabs(cc - C(i > j ? i : j , i > j ? j : i)) / sqrt(C(i,i)* C(j,j)) > double(1e-10);
+        const bool cond2 = fabs(cc - C(i > j ? i : j , i > j ? j : i)) > double(3e-14);
         if (cond1 && cond2)
         {
           std::stringstream s;
-          s << i << " " << j << ": " << cc << " " << C[i > j ? i : j][i > j ? j : i]
-              << ", " << cc - C[i > j ? i : j][i > j ? j : i];
+          s << i << " " << j << ": " << cc << " " << C(i > j ? i : j , i > j ? j : i)
+              << ", " << cc - C( i > j ? i : j , i > j ? j : i);
           
           std::cout << "eigen(): imprecise result detected " << s.str()
                 << std::endl;
@@ -337,7 +338,7 @@ namespace optimization {
       for (int i = 0; i < N; ++i)
         for (int j = diag ? i : 0; j <= i; ++j)
         {
-          double& Cij = C[i][j];
+          double& Cij = C(i,j);
           Cij = onemccov1ccovmu*Cij + ccov1 * (pc[i]*pc[j] + longFactor*Cij);
           for (int k = 0; k < mu; ++k)
           { // additional rank mu update
@@ -347,10 +348,10 @@ namespace optimization {
           }
         }
       // update maximal and minimal diagonal value
-      maxdiagC = mindiagC = C[0][0];
+      maxdiagC = mindiagC = C(0,0);
       for (int i = 1; i < N; ++i)
       {
-        const double& Cii = C[i][i];
+        const double& Cii = C(i,i);
         if (maxdiagC < Cii)
           maxdiagC = Cii;
         else if (mindiagC > Cii)
@@ -425,7 +426,7 @@ namespace optimization {
     ++xBestEver;
     xBestEver[N] = std::numeric_limits<double>::max();
     rgD.set_size(N);
-    C = new double*[N];
+    C.set_size(N,N);
     B.set_size(N,N);
     publicFitness.set_size(lambda);
     functionValues = new double[lambda+1];
@@ -435,9 +436,6 @@ namespace optimization {
     funcValueHistory = new double[historySize + 1];
     funcValueHistory[0] = (double) historySize;
     funcValueHistory++;
-
-    for (int i = 0; i < N; ++i) C[i] = new double[i+1];
-    
     index = new int[lambda];
     for (int i = 0; i < lambda; ++i)
         index[i] = i;
@@ -461,14 +459,14 @@ namespace optimization {
     }
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < i; ++j)
-        C[i][j] = B(i,j) = B(j,i) = 0.;
+        C(i,j) = B(i,j) = B(j,i) = 0.;
 
     for (int i = 0; i < N; ++i)
     {
       B.diag().ones();
-      
-      C[i][i] = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
-      C[i][i] *= C[i][i];
+
+      C(i,i) = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
+      C(i,i) *= C(i,i);
       pc[i] = ps[i] = double(0);
     }
     minEW = rgD.min();
@@ -476,10 +474,10 @@ namespace optimization {
     maxEW = rgD.max();
     maxEW = maxEW*maxEW;
 
-    maxdiagC = C[0][0];
-    for (int i = 1; i < N; ++i) if (maxdiagC < C[i][i]) maxdiagC = C[i][i];
-    mindiagC = C[0][0];
-    for (int i = 1; i < N; ++i) if (mindiagC > C[i][i]) mindiagC = C[i][i];
+    maxdiagC = C(0,0);
+    for (int i = 1; i < N; ++i) if (maxdiagC < C(i,i)) maxdiagC = C(i,i);
+    mindiagC = C(0,0);
+    for (int i = 1; i < N; ++i) if (mindiagC > C(i,i)) mindiagC = C(i,i);
 
     for (int i = 0; i < N; ++i)
       xmean[i] = xold[i] = xstart[i];
@@ -510,7 +508,7 @@ namespace optimization {
       else
       {
         for (int i = 0; i < N; ++i)
-          rgD[i] = std::sqrt(C[i][i]);
+          rgD[i] = std::sqrt(C(i,i));
         minEW = rgD.min();
         minEW *= minEW;
         maxEW = rgD.max();
@@ -740,7 +738,7 @@ namespace optimization {
     int cTemp = 0;
     for (int i = 0; i < N; ++i)
     {
-      cTemp += (sigma*std::sqrt(C[i][i]) < stopTolX) ? 1 : 0;
+      cTemp += (sigma*std::sqrt(C(i,i)) < stopTolX) ? 1 : 0;
       cTemp += (sigma*pc[i] < stopTolX) ? 1 : 0;
     }
     if (cTemp == 2*N)
@@ -751,7 +749,7 @@ namespace optimization {
     // TolUpX
     for (int i = 0; i < N; ++i)
     {
-      if (sigma*std::sqrt(C[i][i]) > stopTolUpXFactor*rgInitialStds[i])
+      if (sigma*std::sqrt(C(i,i)) > stopTolUpXFactor*rgInitialStds[i])
       {
         message << "TolUpX: standard deviation increased by more than "
             << stopTolUpXFactor << ", larger initial standard deviation recommended."
@@ -790,10 +788,10 @@ namespace optimization {
     // Component of xmean is not changed anymore
     for (iKoo = 0; iKoo < N; ++iKoo)
     {
-      if (xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt(C[iKoo][iKoo])/double(5))
+      if (xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt( C(iKoo,iKoo) )/double(5))
       {
         message << "NoEffectCoordinate: standard deviation 0.2*"
-            << (sigma*std::sqrt(C[iKoo][iKoo])) << " in coordinate " << iKoo
+            << (sigma*std::sqrt( C(iKoo , iKoo) ) ) << " in coordinate " << iKoo
             << " without effect" << std::endl;
         break;
       }

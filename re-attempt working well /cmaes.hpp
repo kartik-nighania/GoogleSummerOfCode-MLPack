@@ -57,9 +57,8 @@ public:
 
     void getStandardDeviations(double *arr)
   { 
-  
     for (int i = 0; i < N; ++i)
-    arr[i] = sigma*std::sqrt(C[i][i]);    
+    arr[i] = sigma*std::sqrt(C(i,i));    
   }
 
   void getXBestEver(double *arr)
@@ -153,15 +152,10 @@ double minStdDev(){return sigma*std::sqrt(mindiagC);}
 
 void diagonalCovariance(double *arr)
   {
-     for (int i = 0; i < N; ++i) arr[i] = C[i][i];
+     for (int i = 0; i < N; ++i) arr[i] = C(i,i);
   }
 
-  void diagonalD(double *arr, size_t N) { for (int i = 0; i < N; ++i) arr[i] = rgD[i]; }
-
-  void standardDeviation(double *arr, size_t N)
-  {
-    for (int i = 0; i < N; ++i) arr[i] = sigma*std::sqrt(C[i][i]);
-  }
+void diagonalD(double *arr, size_t N) { for (int i = 0; i < N; ++i) arr[i] = rgD[i]; }
 
 void getFittestMean(double *arr)
 { 
@@ -284,7 +278,7 @@ private:
 
   double chiN;
   //! Lower triangular matrix: i>=j for C[i][j].
-  double** C;
+  arma::mat C;
   //! Matrix with normalize eigenvectors in columns.
   arma::mat B;
   //! Axis lengths.
