@@ -270,7 +270,7 @@ private:
   //! Best sample ever.
   arma::vec xBestEver;
   //! x-vectors, lambda offspring.
-  double** population;
+  arma::mat population;
   //! Sorting index of sample population.
   int* index;
   //! History of function values.

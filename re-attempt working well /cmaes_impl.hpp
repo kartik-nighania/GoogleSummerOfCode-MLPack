@@ -205,7 +205,7 @@ namespace optimization {
     // evaluate the new search points using the given evaluate function by the user
     for (int i = 0; i < lambda; ++i)
     {
-      for (int j=0; j<N; j++) fit(0,j) = population[i][j];
+      for (int j=0; j<N; j++) fit(0,j) = population(i,j);
 
       arFunvals[i] = function.Evaluate(fit);
     }
@@ -342,9 +342,8 @@ namespace optimization {
           Cij = onemccov1ccovmu*Cij + ccov1 * (pc[i]*pc[j] + longFactor*Cij);
           for (int k = 0; k < mu; ++k)
           { // additional rank mu update
-            const double* rgrgxindexk = population[index[k]];
-            Cij += ccovmu*weights[k] * (rgrgxindexk[i] - xold[i])
-                * (rgrgxindexk[j] - xold[j]) / sigmasquare;
+            Cij += ccovmu*weights[k] * (population(index[k] , i) - xold[i])
+                * (population(index[k] , j) - xold[j]) / sigmasquare;
           }
         }
       // update maximal and minimal diagonal value
@@ -439,16 +438,7 @@ namespace optimization {
     index = new int[lambda];
     for (int i = 0; i < lambda; ++i)
         index[i] = i;
-    population = new double*[lambda];
-    for (int i = 0; i < lambda; ++i)
-    {
-      population[i] = new double[N+2];
-      population[i][0] = N;
-      population[i]++;
-      for (int j = 0; j < N; j++)
-        population[i][j] = 0.0;
-    }
-
+    population.zeros(lambda, N+2);
     for (int i = 0; i < lambda; i++)
     {
       functionValues[i] = std::numeric_limits<double>::max();
@@ -519,10 +509,9 @@ namespace optimization {
 
     for (int iNk = 0; iNk < lambda; ++iNk)
     { // generate scaled random vector D*z
-      double* rgrgxink = population[iNk];
       for (int i = 0; i < N; ++i)
         if (diag)
-          rgrgxink[i] = xmean[i] + sigma*rgD[i]*rand.gauss();
+          population(iNk,i) = xmean[i] + sigma*rgD[i]*rand.gauss();
         else
           tempRandom[i] = rgD[i]*rand.gauss();
       if (!diag)
@@ -531,7 +520,7 @@ namespace optimization {
           double sum = 0.0;
           for (int j = 0; j < N; ++j)
             sum += B(i,j)*tempRandom[j];
-          rgrgxink[i] = xmean[i] + sigma*sum;
+          population(iNk , i) = xmean[i] + sigma*sum;
         }
     }
 
@@ -586,7 +575,7 @@ namespace optimization {
 
     // assign function values
     for (int i = 0; i < lambda; ++i)
-      population[i][N] = functionValues[i] = fitnessValues[i];
+      population(i,N) = functionValues[i] = fitnessValues[i];
 
     // Generate index
     sortIndex(fitnessValues, index, lambda);
@@ -607,10 +596,10 @@ namespace optimization {
     funcValueHistory[0] = fitnessValues[index[0]];
 
     // update xbestever
-    if (xBestEver[N] > population[index[0]][N] || gen == 1)
+    if (xBestEver[N] > population(index[0],N) || gen == 1)
       for (int i = 0; i <= N; ++i)
       {
-        xBestEver[i] = population[index[0]][i];
+        xBestEver[i] = population(index[0] , i);
         xBestEver[N+1] = countevals;
       }
 
@@ -621,7 +610,7 @@ namespace optimization {
       xold[i] = xmean[i];
       xmean[i] = 0.;
       for (int iNk = 0; iNk < mu; ++iNk)
-        xmean[i] += weights[iNk]*population[index[iNk]][i];
+        xmean[i] += weights[iNk]*population(index[iNk] , i);
       BDz[i] = sqrtmueffdivsigma*(xmean[i]-xold[i]);
     }
 

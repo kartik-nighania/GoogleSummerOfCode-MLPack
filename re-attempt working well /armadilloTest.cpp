@@ -8,24 +8,35 @@ using namespace arma;
    {
    		cout << endl << "here it is " << x[1] << endl;
    }
+
 int main()
 {	
 
 	const mat ok("0; 0.44");
 	mat pk(3,2);
-	cout << endl << ok[0] <<  " " << pk(0,0)<< endl  ;
+	//cout << endl << ok[0] <<  " " << pk(0,0) << endl  ;
 
 	double z = 1.2e-100;
 
-	cout << z;
+	//cout << z;
+	double** population;
+ 	population = new double*[4];
+    for (int i = 0; i < 4; ++i)
+    {
+      population[i] = new double[5];
+      population[i][0] = 3.4;
+      //population[i]++;
+      for (int j = 0; j < 4; j++) population[i][j] = 0.664;
+    }
 
-    B = new double*[2];
+cout << endl;
 
-    B[0] = new double[3];
-    B[1] = new double[3];
+for(int i=0; i<4; i++)
+{
+	for(int j=0; j<4; j++) cout << population[i][j] << " ";
+	cout << endl; 
+}
 
-    B[0][0] = 5;
-    
 
 
 	//double r=10;
