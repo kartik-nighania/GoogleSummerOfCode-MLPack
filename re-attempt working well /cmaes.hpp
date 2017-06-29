@@ -299,7 +299,7 @@ private:
   //! Objective function values of the population.
   double* functionValues;
   //!< Public objective function value array returned by init().
-  double* publicFitness;
+  arma::vec publicFitness;
 
   //! Generation number.
   double gen;

@@ -428,7 +428,7 @@ namespace optimization {
     rgD.set_size(N);
     C = new double*[N];
     B = new double*[N];
-    publicFitness = new double[lambda];
+    publicFitness.set_size(lambda);
     functionValues = new double[lambda+1];
     functionValues[0] = lambda;
     ++functionValues;
