@@ -165,8 +165,6 @@ void getFittestMean(double *arr)
   for (int i=0; i<N; i++) arr[i] = xmean[i]; 
 }
 
- 
-
   double maxElement(const double* rgd, int len)
   {
     return *std::max_element(rgd, rgd + len);
@@ -287,7 +285,7 @@ private:
   //! Matrix with normalize eigenvectors in columns.
   double** B;
   //! Axis lengths.
-  double* rgD;
+  arma::vec rgD;
   //! Anisotropic evolution path (for covariance).
   arma::vec pc;
   //! Isotropic evolution path (for step length).
@@ -326,7 +324,7 @@ private:
 
   std::string stopMessage; //!< A message that contains all matched stop criteria.
   
-  void eigen(double* diag, double** Q);
+  void eigen(arma::vec diag, double** Q);
   void updateEigensystem(bool force);
   void sortIndex(const arma::vec rgFunVal, int* iindex, int n);
   void adaptC2(const int hsig);
@@ -338,7 +336,7 @@ private:
    void updateDistribution(const arma::vec fitnessValues);
 
    bool testForTermination();
-   int  checkEigen(double* diag, double** Q);
+   int  checkEigen(arma::vec diag, double** Q);
 
 };
 } // namespace optimization

@@ -230,7 +230,7 @@ namespace optimization {
    * @param Q (output) Columns are normalized eigenvectors.
    */
    template<typename funcType>
-  void CMAES<funcType>::eigen(double* diag, double** Q)
+  void CMAES<funcType>::eigen(arma::vec diag, double** Q)
   { 
 
      arma::vec eV;
@@ -261,7 +261,7 @@ namespace optimization {
    * @return number of detected inaccuracies
    */
    template<typename funcType>
-  int CMAES<funcType>::checkEigen(double* diag, double** Q)
+  int CMAES<funcType>::checkEigen(arma::vec diag, double** Q)
   {
     // compute Q diag Q^T and Q Q^T to check
     int res = 0;
@@ -425,7 +425,7 @@ namespace optimization {
     xBestEver[0] = N;
     ++xBestEver;
     xBestEver[N] = std::numeric_limits<double>::max();
-    rgD = new double[N];
+    rgD.set_size(N);
     C = new double*[N];
     B = new double*[N];
     publicFitness = new double[lambda];
@@ -474,9 +474,9 @@ namespace optimization {
       C[i][i] *= C[i][i];
       pc[i] = ps[i] = double(0);
     }
-    minEW = minElement(rgD, N);
+    minEW = rgD.min();
     minEW = minEW*minEW;
-    maxEW = maxElement(rgD, N);
+    maxEW = rgD.max();
     maxEW = maxEW*maxEW;
 
     maxdiagC = C[0][0];
@@ -514,9 +514,9 @@ namespace optimization {
       {
         for (int i = 0; i < N; ++i)
           rgD[i] = std::sqrt(C[i][i]);
-        minEW = minElement(rgD, N);
+        minEW = rgD.min();
         minEW *= minEW;
-        maxEW = maxElement(rgD, N);
+        maxEW = rgD.max();
         maxEW *= maxEW;
         eigensysIsUptodate = true;
       }
@@ -840,8 +840,8 @@ namespace optimization {
     eigen(rgD, B);
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
-    minEW = minElement(rgD, N);
-    maxEW = maxElement(rgD, N);
+    minEW = rgD.min();
+    maxEW = rgD.max();
 
     if (doCheckEigen) // needs O(n^3)! writes, in case, error message in error file
       checkEigen(rgD, B);
