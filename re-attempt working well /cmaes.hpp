@@ -325,7 +325,6 @@ private:
 
    void init(arma::vec& func);
    void samplePopulation();
-   double* perturbSolutionInto(double* x, double const* pxmean, double eps);
    void updateDistribution(const arma::vec fitnessValues);
 
    bool testForTermination();

@@ -2,13 +2,6 @@
  * @file test.cpp
  * Very short example of CMAES optimizer working
  */
-
-/* 
-now i need dim , start, stddiv
-arma::mat for test function and standard dev
-
-*/
-
 #include <stdlib.h>
 #include <iostream>
 #include "cmaes.hpp"

@@ -490,29 +490,6 @@ namespace optimization {
   }
 
   /**
-   * Used to reevaluate a slightly disturbed solution for an uncertaintly
-   * measurement. In case if x == NULL on input, the memory of the returned x
-   * must be released.
-   * @param x Solution vector that gets sampled a new value. If x == NULL new
-   *          memory is allocated and must be released by the user using
-   *          delete[] x.
-   * @param pxmean Mean vector \f$\mu\f$ for perturbation.
-   * @param eps Scale factor \f$\epsilon\f$ for perturbation:
-   *            \f$x \sim \mu + \epsilon \sigma N(0,C)\f$.
-   * @return A pointer to the perturbed solution vector, equals input x for
-   *         x != NULL.
-   */
-   template<typename funcType>
-  double* CMAES<funcType>:: perturbSolutionInto(double* x, double const* pxmean, double eps)
-  {
-    if (!x)
-      x = new double[N];
-    assert(pxmean && "perturbSolutionInto(): pxmean was not given");
-    addMutation(x, eps);
-    return x;
-  }
-
-  /**
    * Core procedure of the CMA-ES algorithm. Sets a new mean value and estimates
    * the new covariance matrix and a new step size for the normal search
    * distribution.
