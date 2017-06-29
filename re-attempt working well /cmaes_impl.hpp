@@ -270,7 +270,7 @@ namespace optimization {
 
 
    template<typename funcType>
-  void CMAES<funcType>::sortIndex(const arma::vec rgFunVal, int* iindex, int n)
+  void CMAES<funcType>::sortIndex(const arma::vec rgFunVal, arma::vec& iindex, int n)
   {
     int i, j;
     for (i = 1, iindex[0] = 0; i < n; ++i)
@@ -398,9 +398,7 @@ namespace optimization {
     funcValueHistory = new double[historySize + 1];
     funcValueHistory[0] = (double) historySize;
     funcValueHistory++;
-    index = new int[lambda];
-    for (int i = 0; i < lambda; ++i)
-        index[i] = i;
+    index = arma::linspace<arma::vec>(0, lambda-1, lambda);
     population.zeros(lambda, N+2);
     for (int i = 0; i < lambda; i++)
     {
@@ -656,9 +654,9 @@ namespace optimization {
 
     // function value reached
     if ((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
-        functionValues[index[0]] <= stStopFitness.val)
+        functionValues[(int)index[0]] <= stStopFitness.val)
     {
-      message << "Fitness: function value " << functionValues[index[0]]
+      message << "Fitness: function value " << functionValues[(int)index[0]]
           << " <= stopFitness (" << stStopFitness.val << ")" << std::endl;
     }
 

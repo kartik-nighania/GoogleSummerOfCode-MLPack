@@ -133,7 +133,7 @@ double axisRatio() { return maxElement(rgD,N) / minElement(rgD,N);};
 
 double evaluation(){ return countevals; }
 
-double fitness(){ return functionValues[index[0]];}
+double fitness(){ return functionValues[(int)index[0]];}
 
 double fitnessBestEver(){ return xBestEver[N];}
 
@@ -269,7 +269,7 @@ private:
   //! x-vectors, lambda offspring.
   arma::mat population;
   //! Sorting index of sample population.
-  int* index;
+  arma::vec index;
   //! History of function values.
   double* funcValueHistory;
 
@@ -319,7 +319,7 @@ private:
   std::string stopMessage; //!< A message that contains all matched stop criteria.
   
   void updateEigensystem(bool force);
-  void sortIndex(const arma::vec rgFunVal, int* iindex, int n);
+  void sortIndex(const arma::vec rgFunVal, arma::vec& iindex, int n);
   void adaptC2(const int hsig);
   void addMutation(double* x, double eps = 1.0);
 
