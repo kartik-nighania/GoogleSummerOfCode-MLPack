@@ -230,7 +230,7 @@ namespace optimization {
    * @param Q (output) Columns are normalized eigenvectors.
    */
    template<typename funcType>
-  void CMAES<funcType>::eigen(arma::vec diag, double** Q)
+  void CMAES<funcType>::eigen(arma::vec diag, arma::mat& Q)
   { 
 
      arma::vec eV;
@@ -248,8 +248,7 @@ namespace optimization {
      {
       diag[i]=eV(i);
 
-        for (int j=0; j<N; j++)
-        Q[i][j]=eigMat(i,j);
+        for (int j=0; j<N; j++) Q(i,j)=eigMat(i,j);
       
      }
   
@@ -261,7 +260,7 @@ namespace optimization {
    * @return number of detected inaccuracies
    */
    template<typename funcType>
-  int CMAES<funcType>::checkEigen(arma::vec diag, double** Q)
+  int CMAES<funcType>::checkEigen(arma::vec diag, arma::mat Q)
   {
     // compute Q diag Q^T and Q Q^T to check
     int res = 0;
@@ -270,8 +269,8 @@ namespace optimization {
         double cc = 0., dd = 0.;
         for (int k = 0; k < N; ++k)
         {
-          cc += diag[k]*Q[i][k]*Q[j][k];
-          dd += Q[i][k]*Q[j][k];
+          cc += diag[k]*Q(i,k)*Q(j,k);
+          dd += Q(i,k)*Q(j,k);
         }
         // check here, is the normalization the right one?
         const bool cond1 = fabs(cc - C[i > j ? i : j][i > j ? j : i]) / sqrt(C[i][i]* C[j][j]) > double(1e-10);
@@ -375,7 +374,7 @@ namespace optimization {
     {
       double sum = 0.0;
       for (int j = 0; j < N; ++j)
-        sum += B[i][j]*tempRandom[j];
+        sum += B(i,j)*tempRandom[j];
       x[i] = xmean[i] + eps*sigma*sum;
     }
   }
@@ -427,7 +426,7 @@ namespace optimization {
     xBestEver[N] = std::numeric_limits<double>::max();
     rgD.set_size(N);
     C = new double*[N];
-    B = new double*[N];
+    B.set_size(N,N);
     publicFitness.set_size(lambda);
     functionValues = new double[lambda+1];
     functionValues[0] = lambda;
@@ -437,11 +436,8 @@ namespace optimization {
     funcValueHistory[0] = (double) historySize;
     funcValueHistory++;
 
-    for (int i = 0; i < N; ++i)
-    {
-      C[i] = new double[i+1];
-      B[i] = new double[N];
-    }
+    for (int i = 0; i < N; ++i) C[i] = new double[i+1];
+    
     index = new int[lambda];
     for (int i = 0; i < lambda; ++i)
         index[i] = i;
@@ -465,11 +461,12 @@ namespace optimization {
     }
     for (int i = 0; i < N; ++i)
       for (int j = 0; j < i; ++j)
-        C[i][j] = B[i][j] = B[j][i] = 0.;
+        C[i][j] = B(i,j) = B(j,i) = 0.;
 
     for (int i = 0; i < N; ++i)
     {
-      B[i][i] = double(1);
+      B.diag().ones();
+      
       C[i][i] = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
       C[i][i] *= C[i][i];
       pc[i] = ps[i] = double(0);
@@ -535,7 +532,7 @@ namespace optimization {
         {
           double sum = 0.0;
           for (int j = 0; j < N; ++j)
-            sum += B[i][j]*tempRandom[j];
+            sum += B(i,j)*tempRandom[j];
           rgrgxink[i] = xmean[i] + sigma*sum;
         }
     }
@@ -640,7 +637,7 @@ namespace optimization {
       {
         sum = 0.;
         for (int j = 0; j < N; ++j)
-          sum += B[j][i]*BDz[j];
+          sum += B(j,i)*BDz[j];
       }
       tempRandom[i] = sum/rgD[i];
     }
@@ -656,9 +653,8 @@ namespace optimization {
       else
       {
         sum = double(0);
-        double* Bi = B[i];
         for (int j = 0; j < N; ++j)
-          sum += Bi[j]*tempRandom[j];
+          sum += B(i,j)*tempRandom[j];
       }
       ps[i] = invps*ps[i] + sqrtFactor*sum;
     }
@@ -780,7 +776,7 @@ namespace optimization {
         fac = 0.1* sigma* rgD[iAchse];
         for (iKoo = 0; iKoo < N; ++iKoo)
         {
-          if (xmean[iKoo] != xmean[iKoo] + fac* B[iKoo][iAchse])
+          if (xmean[iKoo] != xmean[iKoo] + fac* B(iKoo,iAchse))
             break;
         }
         if (iKoo == N)

@@ -19,6 +19,15 @@ int main()
 
 	cout << z;
 
+    B = new double*[2];
+
+    B[0] = new double[3];
+    B[1] = new double[3];
+
+    B[0][0] = 5;
+    
+
+
 	//double r=10;
 	//gauss(ok);
 

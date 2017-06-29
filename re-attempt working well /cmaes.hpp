@@ -9,6 +9,9 @@
  * 3-clause BSD license along with mlpack.  If not, see
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
+
+// eigen copying rthe same matrix 
+//the zero that is put in the whole matrix at 465
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 
@@ -283,7 +286,7 @@ private:
   //! Lower triangular matrix: i>=j for C[i][j].
   double** C;
   //! Matrix with normalize eigenvectors in columns.
-  double** B;
+  arma::mat B;
   //! Axis lengths.
   arma::vec rgD;
   //! Anisotropic evolution path (for covariance).
@@ -324,7 +327,7 @@ private:
 
   std::string stopMessage; //!< A message that contains all matched stop criteria.
   
-  void eigen(arma::vec diag, double** Q);
+  void eigen(arma::vec diag, arma::mat& Q);
   void updateEigensystem(bool force);
   void sortIndex(const arma::vec rgFunVal, int* iindex, int n);
   void adaptC2(const int hsig);
@@ -336,7 +339,7 @@ private:
    void updateDistribution(const arma::vec fitnessValues);
 
    bool testForTermination();
-   int  checkEigen(arma::vec diag, double** Q);
+   int  checkEigen(arma::vec diag, arma::mat Q);
 
 };
 } // namespace optimization
