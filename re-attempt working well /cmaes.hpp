@@ -9,9 +9,6 @@
  * 3-clause BSD license along with mlpack.  If not, see
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
-
-// eigen copying rthe same matrix 
-//the zero that is put in the whole matrix at 465
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 
@@ -321,7 +318,6 @@ private:
 
   std::string stopMessage; //!< A message that contains all matched stop criteria.
   
-  void eigen(arma::vec diag, arma::mat& Q);
   void updateEigensystem(bool force);
   void sortIndex(const arma::vec rgFunVal, int* iindex, int n);
   void adaptC2(const int hsig);

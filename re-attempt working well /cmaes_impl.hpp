@@ -223,37 +223,6 @@ namespace optimization {
 
   }
 
-/**
-   * Calculating eigenvalues and vectors.
-   * Also checks for successful eigen decomposition.
-   * @param diag (output) N eigenvalues.
-   * @param Q (output) Columns are normalized eigenvectors.
-   */
-   template<typename funcType>
-  void CMAES<funcType>::eigen(arma::vec diag, arma::mat& Q)
-  { 
-
-     arma::vec eV;
-     arma::mat eigMat;
-
-     arma::mat cov(N,N);
-     for (int i=0; i<N; i++)
-      for (int j=0; j<=i; j++) cov(i,j)=cov(j,i)=C(i,j);
-
-
-   if (!arma::eig_sym(eV, eigMat, cov))
-        assert("eigen decomposition failed in neuro_cmaes::eigen()");
-
-     for (int i=0; i<N; i++)
-     {
-      diag[i]=eV(i);
-
-        for (int j=0; j<N; j++) Q(i,j)=eigMat(i,j);
-      
-     }
-  
-  }
-
   /** 
    * Exhaustive test of the output of the eigendecomposition, needs O(n^3)
    * operations writes to error file.
@@ -447,9 +416,9 @@ namespace optimization {
     {
       funcValueHistory[i] = std::numeric_limits<double>::max();
     }
-    for (int i = 0; i < N; ++i)
-      for (int j = 0; j < i; ++j)
-        C(i,j) = B(i,j) = B(j,i) = 0.;
+    
+    C.zeros();
+    B.zeros();
 
     for (int i = 0; i < N; ++i)
     {
@@ -820,7 +789,8 @@ namespace optimization {
         return;
     }
 
-    eigen(rgD, B);
+     if (!arma::eig_sym(rgD, B, C))
+        assert("eigen decomposition failed in neuro_cmaes::eigen()");
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
     minEW = rgD.min();
