@@ -24,6 +24,7 @@
 #include <string>
 #include <armadillo>
 #include <iostream>
+#include <cfloat>
 
 #include "random.hpp"
 
@@ -159,14 +160,18 @@ void getFittestMean(double *arr)
   for (int i=0; i<N; i++) arr[i] = xmean[i]; 
 }
 
-  double maxElement(const double* rgd, int len)
-  {
-    return *std::max_element(rgd, rgd + len);
+  double maxElement(const arma::vec rgd, int len)
+  { 
+    double ans = DBL_MIN;
+    for(int i=0; i<len; i++) if (rgd[i] > ans) ans=rgd[i];
+      return ans;
   }
 
-  double minElement(const double* rgd, int len)
+  double minElement(const arma::vec rgd, int len)
   {
-    return *std::min_element(rgd, rgd + len);
+     double ans = DBL_MAX;
+    for(int i=0; i<len; i++) if (rgd[i] < ans) ans=rgd[i];
+      return ans;
   }
 
 /**
@@ -271,7 +276,7 @@ private:
   //! Sorting index of sample population.
   arma::vec index;
   //! History of function values.
-  double* funcValueHistory;
+  arma::vec funcValueHistory;
 
   double chiN;
   //! Lower triangular matrix: i>=j for C[i][j].

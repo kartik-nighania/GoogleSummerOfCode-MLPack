@@ -394,17 +394,14 @@ namespace optimization {
     functionValues[0] = lambda;
     ++functionValues;
     const int historySize = 10 + (int) ceil(3.*10.*N/lambda);
-    funcValueHistory = new double[historySize + 1];
-    funcValueHistory[0] = (double) historySize;
-    funcValueHistory++;
+    funcValueHistory.set_size(historySize + 1);
     index = arma::linspace<arma::vec>(0, lambda-1, lambda);
     population.zeros(lambda, N+2);
     functionValues.fill(DBL_MAX);
-    for (int i = 0; i < historySize; i++)
-    {
-      funcValueHistory[i] = std::numeric_limits<double>::max();
-    }
-    
+    funcValueHistory.fill(DBL_MAX);
+    funcValueHistory[0] = (double) historySize;
+    funcValueHistory++;
+  
     C.zeros();
     B.zeros();
     B.diag().ones();
@@ -521,7 +518,7 @@ namespace optimization {
     }
 
     // update function value history
-    for (int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
+    for (int i = (int)funcValueHistory.size() - 1; i > 0; --i)
       funcValueHistory[i] = funcValueHistory[i - 1];
     funcValueHistory[0] = fitnessValues[index[0]];
 
@@ -632,10 +629,10 @@ namespace optimization {
     }
 
     // TolFun
-    range = std::max(maxElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        functionValues.max()) -
-        std::min(minElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        functionValues.min());
+    range = std::max(maxElement(funcValueHistory, (int) std::min(gen, (double)funcValueHistory.size())),
+        arma::max(functionValues)) -
+        std::min(minElement(funcValueHistory, (int) std::min(gen, (double)funcValueHistory.size())),
+        arma::min(functionValues));
 
     if (gen > 0 && range <= stopTolFun)
     {
@@ -644,10 +641,10 @@ namespace optimization {
     }
 
     // TolFunHist
-    if (gen > *(funcValueHistory - 1))
+    if (gen > funcValueHistory.size())
     {
-      range = maxElement(funcValueHistory, (int) *(funcValueHistory - 1))
-          - minElement(funcValueHistory, (int) *(funcValueHistory - 1));
+      range = maxElement(funcValueHistory, (int)funcValueHistory.size())
+          - minElement(funcValueHistory, (int)funcValueHistory.size());
       if (range <= stopTolFunHist)
         message << "TolFunHist: history of function value changes " << range
             << " stopTolFunHist=" << stopTolFunHist << std::endl;
