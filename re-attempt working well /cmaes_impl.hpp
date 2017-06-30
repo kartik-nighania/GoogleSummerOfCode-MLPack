@@ -501,8 +501,7 @@ namespace optimization {
     else std::cout<<  "updateDistribution(): unexpected state" << std::endl;
 
     // assign function values
-    for (int i = 0; i < lambda; ++i)
-      population(i,N) = functionValues[i] = fitnessValues[i];
+      population.col(N) = functionValues = fitnessValues;
 
     // Generate index
     index = arma::sort_index(fitnessValues);
