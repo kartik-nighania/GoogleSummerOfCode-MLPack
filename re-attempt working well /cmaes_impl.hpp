@@ -391,7 +391,7 @@ namespace optimization {
     C.set_size(N,N);
     B.set_size(N,N);
     publicFitness.set_size(lambda);
-    functionValues = new double[lambda+1];
+    functionValues.set_size(lambda+1);
     functionValues[0] = lambda;
     ++functionValues;
     const int historySize = 10 + (int) ceil(3.*10.*N/lambda);
@@ -639,9 +639,9 @@ namespace optimization {
 
     // TolFun
     range = std::max(maxElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        maxElement(functionValues, lambda)) -
+        functionValues.max()) -
         std::min(minElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        minElement(functionValues, lambda));
+        functionValues.min());
 
     if (gen > 0 && range <= stopTolFun)
     {

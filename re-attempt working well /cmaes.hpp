@@ -291,7 +291,7 @@ private:
   //! Temporary (random) vector used in different places.
   arma::vec tempRandom;
   //! Objective function values of the population.
-  double* functionValues;
+  arma::vec functionValues;
   //!< Public objective function value array returned by init().
   arma::vec publicFitness;
 
