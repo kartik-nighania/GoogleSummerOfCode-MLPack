@@ -379,8 +379,6 @@ namespace optimization {
     tempRandom.set_size(N+1);
     BDz.set_size(N);
     xmean.set_size(N+2);
-    xmean[0] = N;
-    ++xmean;
     xold.set_size(N+2);
     xold[0] = N;
     ++xold;
@@ -424,9 +422,9 @@ namespace optimization {
 
     maxdiagC = arma::max(C.diag());
     mindiagC = arma::min(C.diag());
-
-    for (int i = 0; i < N; ++i)
-      xmean[i] = xold[i] = xstart[i];
+  
+      xmean = xold;
+      xmean = xstart;
     
     if (typicalXcase)
      xmean += sigma * rgD * rand.gauss();
