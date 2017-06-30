@@ -395,7 +395,7 @@ namespace optimization {
     ++functionValues;
     const int historySize = 10 + (int) ceil(3.*10.*N/lambda);
     funcValueHistory.set_size(historySize + 1);
-    index = arma::linspace<arma::vec>(0, lambda-1, lambda);
+    index = arma::linspace<arma::uvec>(0, lambda-1, lambda);
     population.zeros(lambda, N+2);
     functionValues.fill(DBL_MAX);
     funcValueHistory.fill(DBL_MAX);
@@ -505,7 +505,7 @@ namespace optimization {
       population(i,N) = functionValues[i] = fitnessValues[i];
 
     // Generate index
-    sortIndex(fitnessValues, index, lambda);
+    index = arma::sort_index(fitnessValues);
 
     // Test if function values are identical, escape flat fitness
     if (fitnessValues[index[0]] == fitnessValues[index[(int) lambda / 2]])

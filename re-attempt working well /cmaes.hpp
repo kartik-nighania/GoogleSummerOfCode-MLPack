@@ -274,7 +274,7 @@ private:
   //! x-vectors, lambda offspring.
   arma::mat population;
   //! Sorting index of sample population.
-  arma::vec index;
+  arma::uvec index;
   //! History of function values.
   arma::vec funcValueHistory;
 
