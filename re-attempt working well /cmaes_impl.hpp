@@ -429,8 +429,7 @@ namespace optimization {
       xmean[i] = xold[i] = xstart[i];
     
     if (typicalXcase)
-      for (int i = 0; i < N; ++i)
-        xmean[i] += sigma*rgD[i]*rand.gauss();
+     xmean += sigma * rgD * rand.gauss();
 
     func.subvec(0, lambda - 1) = publicFitness.subvec(0, lambda - 1);
   }
