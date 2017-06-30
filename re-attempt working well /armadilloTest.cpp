@@ -37,6 +37,13 @@ for(int i=0; i<4; i++)
 	cout << endl; 
 }
 
+arma::vec row;
+row.set_size(3);
+
+for(int i= (int)row.size(); i>=0; i--)
+{
+	cout << "done " << endl;
+}
 
 
 	//double r=10;

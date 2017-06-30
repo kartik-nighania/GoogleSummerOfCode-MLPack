@@ -24,6 +24,7 @@
 #include <string>
 #include <armadillo>
 #include <iostream>
+#include <cfloat>
 
 #include "cmaes.hpp"
 #include "random.hpp"
@@ -400,10 +401,7 @@ namespace optimization {
     funcValueHistory++;
     index = arma::linspace<arma::vec>(0, lambda-1, lambda);
     population.zeros(lambda, N+2);
-    for (int i = 0; i < lambda; i++)
-    {
-      functionValues[i] = std::numeric_limits<double>::max();
-    }
+    functionValues.fill(DBL_MAX);
     for (int i = 0; i < historySize; i++)
     {
       funcValueHistory[i] = std::numeric_limits<double>::max();
@@ -411,15 +409,14 @@ namespace optimization {
     
     C.zeros();
     B.zeros();
+    B.diag().ones();
 
-    for (int i = 0; i < N; ++i)
-    {
-      B.diag().ones();
+    rgD = rgInitialStds * std::sqrt(N / trace);
+    C.diag() = rgD;
+    arma::pow(C.diag(),2);
+    pc.zeros();
+    ps.zeros();
 
-      C(i,i) = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
-      C(i,i) *= C(i,i);
-      pc[i] = ps[i] = double(0);
-    }
     minEW = rgD.min();
     minEW = minEW*minEW;
     maxEW = rgD.max();
@@ -435,7 +432,7 @@ namespace optimization {
       for (int i = 0; i < N; ++i)
         xmean[i] += sigma*rgD[i]*rand.gauss();
 
-    for(int i=0; i<lambda; i++) func[i] = publicFitness[i];
+    func.subvec(0, lambda - 1) = publicFitness.subvec(0, lambda - 1);
   }
 
   /**
