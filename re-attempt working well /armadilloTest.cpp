@@ -29,12 +29,12 @@ int main()
       for (int j = 0; j < 4; j++) population[i][j] = 0.664;
     }
 
-cout << endl;
+//cout << endl;
 
 for(int i=0; i<4; i++)
 {
 	for(int j=0; j<4; j++) cout << population[i][j] << " ";
-	cout << endl; 
+	//cout << endl; 
 }
 
 arma::vec row;
@@ -42,7 +42,7 @@ row.set_size(3);
 
 for(int i= (int)row.size(); i>=0; i--)
 {
-	cout << "done " << endl;
+	//cout << "done " << endl;
 }
 
 
@@ -57,5 +57,13 @@ for(int i= (int)row.size(); i>=0; i--)
 	//cout << endl << ok[1] << " " << ok[0] << endl ;
 
 	//cout << arma::size(ok);
+
+vec a = randu<vec>(10);
+vec b = randu<vec>(10);
+
+double sww = dot(a,b);
+
+
+ cout << "gotteh dot " << sww << endl;
 	return 0;
 }

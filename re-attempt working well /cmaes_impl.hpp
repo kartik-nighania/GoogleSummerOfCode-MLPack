@@ -376,7 +376,7 @@ namespace optimization {
 
     pc.set_size(N);
     ps.set_size(N);
-    tempRandom.set_size(N+1);
+    tempRandom.set_size(N);
     BDz.set_size(N);
     xmean.set_size(N+2);
     xold.set_size(N+2);
@@ -464,13 +464,14 @@ namespace optimization {
         else
           tempRandom[i] = rgD[i]*rand.gauss();
       if (!diag)
-        for (int i = 0; i < N; ++i) // add mutation sigma*B*(D*z)
+        for (int i = 0; i < N; ++i)
+      { // add mutation sigma*B*(D*z)
+        double sum = 0.0;
         {
-          double sum = 0.0;
-          for (int j = 0; j < N; ++j)
-            sum += B(i,j)*tempRandom[j];
+          sum = arma::dot(B.row(i),tempRandom);
           population(iNk , i) = xmean[i] + sigma*sum;
         }
+      }
     }
 
     if (state == UPDATED || gen == 0)
