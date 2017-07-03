@@ -330,7 +330,7 @@ private:
 
    void init(arma::vec& func);
    void samplePopulation();
-   void updateDistribution(const arma::vec fitnessValues);
+   void updateDistribution(const arma::vec& fitnessValues);
 
    bool testForTermination();
    int  checkEigen(arma::vec diag, arma::mat Q);

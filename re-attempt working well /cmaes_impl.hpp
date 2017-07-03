@@ -447,8 +447,7 @@ namespace optimization {
         updateEigensystem(false);
       else
       {
-        for (int i = 0; i < N; ++i)
-          rgD[i] = std::sqrt(C(i,i));
+        rgD = arma::sqrt(C.diag());
         minEW = rgD.min();
         minEW *= minEW;
         maxEW = rgD.max();
@@ -488,7 +487,7 @@ namespace optimization {
    * @return Mean value of the new distribution.
    */
    template<typename funcType>
-  void CMAES<funcType>::updateDistribution(arma::vec fitnessValues)
+  void CMAES<funcType>::updateDistribution(const arma::vec& fitnessValues)
   {
 
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
