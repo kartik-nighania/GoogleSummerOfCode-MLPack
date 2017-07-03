@@ -25,7 +25,6 @@
 #include <armadillo>
 #include <iostream>
 #include <cfloat>
-#include <mlpack/core/util/log.hpp>
 
 #include "cmaes.hpp"
 #include "random.hpp"
@@ -215,6 +214,8 @@ namespace optimization {
     // update the search distribution used for sampleDistribution()
       updateDistribution(arFunvals);
   }
+
+  std::cout << "Stop:" << std::endl << getStopMessage();
 
   // get best estimator for the optimum
   for (int i=0; i<N; i++) arr[i] = xmean[i]; 
@@ -611,15 +612,19 @@ namespace optimization {
     int iAchse, iKoo;
     int diag = diagonalCov == 1 || diagonalCov >= gen;
 
-    bool termination = false;
+    std::stringstream message;
+
+    if (stopMessage != "")
+    {
+      message << stopMessage << std::endl;
+    }
 
     // function value reached
     if ((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
         functionValues[(int)index[0]] <= stStopFitness.val)
     {
-      Log::Info << "Fitness: function value " << functionValues[(int)index[0]]
+      message << "Fitness: function value " << functionValues[(int)index[0]]
           << " <= stopFitness (" << stStopFitness.val << ")" << std::endl;
-        termination = true;
     }
 
     // TolFun
@@ -630,9 +635,8 @@ namespace optimization {
 
     if (gen > 0 && range <= stopTolFun)
     {
-      Log::Info << "TolFun: function value differences " << range
+      message << "TolFun: function value differences " << range
           << " < stopTolFun=" << stopTolFun << std::endl;
-          termination = true;
     }
 
     // TolFunHist
@@ -640,11 +644,9 @@ namespace optimization {
     {
       range = maxElement(funcValueHistory, (int)funcValueHistory.size())
           - minElement(funcValueHistory, (int)funcValueHistory.size());
-     
       if (range <= stopTolFunHist)
-        Log::Info << "TolFunHist: history of function value changes " << range
+        message << "TolFunHist: history of function value changes " << range
             << " stopTolFunHist=" << stopTolFunHist << std::endl;
-            termination = true;
     }
 
     // TolX
@@ -656,8 +658,7 @@ namespace optimization {
     }
     if (cTemp == 2*N)
     {
-      Log::Info << "TolX: object variable changes below " << stopTolX << std::endl;
-      termination = true;
+      message << "TolX: object variable changes below " << stopTolX << std::endl;
     }
 
     // TolUpX
@@ -665,10 +666,9 @@ namespace optimization {
     {
       if (sigma*std::sqrt(C(i,i)) > stopTolUpXFactor*rgInitialStds[i])
       {
-        Log::Info << "TolUpX: standard deviation increased by more than "
+        message << "TolUpX: standard deviation increased by more than "
             << stopTolUpXFactor << ", larger initial standard deviation recommended."
             << std::endl;
-            termination = true;
         break;
       }
     }
@@ -676,10 +676,9 @@ namespace optimization {
     // Condition of C greater than dMaxSignifKond
     if (maxEW >= minEW* dMaxSignifKond)
     {
-      Log::Info << "ConditionNumber: maximal condition number " << dMaxSignifKond
+      message << "ConditionNumber: maximal condition number " << dMaxSignifKond
           << " reached. maxEW=" << maxEW <<  ",minEW=" << minEW << ",maxdiagC="
           << maxdiagC << ",mindiagC=" << mindiagC << std::endl;
-          termination = true;
     }
 
     // Principal axis i has no effect on xmean, ie. x == x + 0.1* sigma* rgD[i]* B[i]
@@ -695,9 +694,8 @@ namespace optimization {
         }
         if (iKoo == N)
         {
-          Log::Info << "NoEffectAxis: standard deviation 0.1*" << (fac / 0.1)
+          message << "NoEffectAxis: standard deviation 0.1*" << (fac / 0.1)
               << " in principal axis " << iAchse << " without effect" << std::endl;
-              termination = true;
           break;
         }
       }
@@ -707,28 +705,26 @@ namespace optimization {
     {
       if (xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt( C(iKoo,iKoo) )/double(5))
       {
-        Log::Info << "NoEffectCoordinate: standard deviation 0.2*"
+        message << "NoEffectCoordinate: standard deviation 0.2*"
             << (sigma*std::sqrt( C(iKoo , iKoo) ) ) << " in coordinate " << iKoo
             << " without effect" << std::endl;
-             termination = true;
         break;
       }
     }
 
     if (countevals >= stopMaxFunEvals)
     {
-      Log::Info << "MaxFunEvals: conducted function evaluations " << countevals
+      message << "MaxFunEvals: conducted function evaluations " << countevals
           << " >= " << stopMaxFunEvals << std::endl;
-      termination = true;
     }
     if (gen >= stopMaxIter)
     {
-     Log::Info << "MaxIter: number of iterations " << gen << " >= "
-      << stopMaxIter << std::endl;
-       termination = true;
+      message << "MaxIter: number of iterations " << gen << " >= "
+          << stopMaxIter << std::endl;
     }
 
-    return termination;
+    stopMessage = message.str();
+    return stopMessage != "";
   }
 
   /**
