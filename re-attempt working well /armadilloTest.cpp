@@ -6,7 +6,7 @@ using namespace arma;
 
  void gauss(arma::mat& x)
    {
-   		cout << endl << "here it is " << x[1] << endl;
+   		//cout << endl << "here it is " << x[1] << endl;
    }
 
 int main()
@@ -33,7 +33,7 @@ int main()
 
 for(int i=0; i<4; i++)
 {
-	for(int j=0; j<4; j++) cout << population[i][j] << " ";
+	//for(int j=0; j<4; j++) cout << population[i][j] << " ";
 	//cout << endl; 
 }
 
@@ -58,12 +58,15 @@ for(int i= (int)row.size(); i>=0; i--)
 
 	//cout << arma::size(ok);
 
-vec a = randu<vec>(10);
+vec a(5);
+a.fill(4);
 vec b = randu<vec>(10);
 
-double sww = dot(a,b);
+//double sww = dot(a,b);
 
 
- cout << "gotteh dot " << sww << endl;
+cout << "a" << a << endl;
+cout << 1/a << endl;
+// cout << "here " << a.subvec(0,3) << endl;
 	return 0;
 }

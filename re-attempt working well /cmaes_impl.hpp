@@ -523,11 +523,10 @@ namespace optimization {
 
     // update xbestever
     if (xBestEver[N] > population(index[0],N) || gen == 1)
-      for (int i = 0; i <= N; ++i)
-      {
-        xBestEver[i] = population(index[0] , i);
+    {
+        xBestEver.subvec(0,N-1) = population.submat(index[0], 0, index[0], N-1).t();
         xBestEver[N+1] = countevals;
-      }
+    }
 
     const double sqrtmueffdivsigma = std::sqrt(mueff) / sigma;
     // calculate xmean and rgBDz~N(0,C)
