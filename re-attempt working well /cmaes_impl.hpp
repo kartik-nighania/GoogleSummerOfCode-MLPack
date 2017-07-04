@@ -572,12 +572,7 @@ namespace optimization {
     }
 
     // calculate norm(ps)^2
-    double psxps(0);
-    for (int i = 0; i < N; ++i)
-    {
-      const double& rgpsi = ps[i];
-      psxps += rgpsi*rgpsi;
-    }
+    double psxps = std::pow(arma::norm(ps),2);
 
     // cumulation for covariance matrix (pc) using B*D*z~N(0,C)
     int hsig = std::sqrt(psxps) / std::sqrt(double(1) - std::pow(double(1) - cs, double(2)* gen))

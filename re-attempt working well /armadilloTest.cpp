@@ -1,5 +1,6 @@
 #include <iostream>
 #include <armadillo>
+#include <cmath>
 
 using namespace std;
 using namespace arma;
@@ -11,62 +12,9 @@ using namespace arma;
 
 int main()
 {	
+	vec st(3);
+	st[0] = 3; st[1] = 1; st[2] = 2;
+	cout << "this is the norm : " << pow(norm(st),2) << endl;
 
-	const mat ok("0; 0.44");
-	mat pk(3,2);
-	//cout << endl << ok[0] <<  " " << pk(0,0) << endl  ;
-
-	double z = 1.2e-100;
-
-	//cout << z;
-	double** population;
- 	population = new double*[4];
-    for (int i = 0; i < 4; ++i)
-    {
-      population[i] = new double[5];
-      population[i][0] = 3.4;
-      //population[i]++;
-      for (int j = 0; j < 4; j++) population[i][j] = 0.664;
-    }
-
-//cout << endl;
-
-for(int i=0; i<4; i++)
-{
-	//for(int j=0; j<4; j++) cout << population[i][j] << " ";
-	//cout << endl; 
-}
-
-arma::vec row;
-row.set_size(3);
-
-for(int i= (int)row.size(); i>=0; i--)
-{
-	//cout << "done " << endl;
-}
-
-
-	//double r=10;
-	//gauss(ok);
-
-	/* double d = gauss();
-	double s = gauss();
-	cout << d << " " << s << endl;
-	*/
-
-	//cout << endl << ok[1] << " " << ok[0] << endl ;
-
-	//cout << arma::size(ok);
-
-vec a(5);
-a.fill(4);
-vec b = randu<vec>(10);
-
-//double sww = dot(a,b);
-
-
-cout << "a" << a << endl;
-cout << 1/a << endl;
-// cout << "here " << a.subvec(0,3) << endl;
 	return 0;
 }
