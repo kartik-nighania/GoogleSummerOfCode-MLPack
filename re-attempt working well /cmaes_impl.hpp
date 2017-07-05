@@ -12,6 +12,7 @@
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 
+#include <mlpack/core.hpp>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
@@ -333,7 +334,7 @@ namespace optimization {
   void CMAES<funcType>::addMutation(double* x, double eps)
   {
     for (int i = 0; i < N; ++i)
-      tempRandom[i] = rgD[i]*rand.gauss();
+      tempRandom[i] = rgD[i] * rand.gauss();
     for (int i = 0; i < N; ++i)
     {
       double sum = 0.0;
@@ -460,9 +461,9 @@ namespace optimization {
     { // generate scaled random vector D*z
       for (int i = 0; i < N; ++i)
         if (diag)
-          population(iNk,i) = xmean[i] + sigma*rgD[i]*rand.gauss();
+          population(iNk,i) = xmean[i] + sigma*rgD[i] * rand.gauss();
         else
-          tempRandom[i] = rgD[i]*rand.gauss();
+          tempRandom[i] = rgD[i]* rand.gauss();
       if (!diag)
         for (int i = 0; i < N; ++i)
       { // add mutation sigma*B*(D*z)

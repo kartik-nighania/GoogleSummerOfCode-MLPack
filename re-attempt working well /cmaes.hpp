@@ -12,6 +12,7 @@
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 
+#include <mlpack/core.hpp>
 #include <cassert>
 #include <cmath>
 #include <cstdio>
