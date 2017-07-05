@@ -2,11 +2,12 @@
  * @file test.cpp
  * Very short example of CMAES optimizer working
  */
-#include <stdlib.h>
 #include <iostream>
-#include "cmaes.hpp"
 #include <math.h>
+#include <mlpack/core.hpp>
 #include <armadillo>
+
+#include "cmaes.hpp"
 
 using namespace std;
 using namespace mlpack;
