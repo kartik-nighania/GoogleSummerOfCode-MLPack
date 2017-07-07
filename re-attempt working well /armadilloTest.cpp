@@ -12,10 +12,15 @@ using namespace arma;
 
 int main()
 {	
-	vec st(3);
-	st[0] = 3; st[1] = 1; st[2] = 2;
-	st = arma::sqrt(st);
-	//cout << "this is the norm : " << pow(norm(st),2) << endl;
-    std::cout << st << std::endl;
+	vec st(6);
+	st[0] = 3; st[1] = 1; st[2] = 2; st[3] = 23; st[4] = 231; st[5] = 0.2;
+	
+
+    std::cout <<"before " << endl << 10*st << std::endl;
+
+	uvec x = (find(st < 5));
+	double d =x.n_rows;
+
+    std::cout <<"after "<< d << std::endl;
 	return 0;
 }

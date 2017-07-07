@@ -590,13 +590,10 @@ namespace optimization {
     }
 
     // TolX
-    int cTemp = 0;
-    for (int i = 0; i < N; ++i)
-    {
-      cTemp += (sigma*std::sqrt(C(i,i)) < stopTolX) ? 1 : 0;
-      cTemp += (sigma*pc[i] < stopTolX) ? 1 : 0;
-    }
-    
+    arma::uvec x = arma::find((sigma*arma::sqrt(C.diag())) < stopTolX);
+    arma::uvec y = arma::find(sigma*pc < stopTolX);
+    int cTemp = x.n_rows + y.n_rows;
+
     if (cTemp == 2*N)
     {
        Log::Info << "TolX: object variable changes below " << stopTolX << std::endl;
