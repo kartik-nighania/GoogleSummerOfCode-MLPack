@@ -201,13 +201,14 @@ namespace optimization {
   {
     // Generate lambda new search points, sample population
     samplePopulation();
-    arma::mat fit(1,N);
+
+    arma::mat x(N,1);
 
     // evaluate the new search points using the given evaluate function by the user
     for (int i = 0; i < lambda; ++i)
     {
-      arma::mat x(N,1);  x = population.submat(i, 0, i, N-1);
-    arFunvals[i] = function.Evaluate(x);
+      x = population.submat(i, 0, i, N-1);
+      arFunvals[i] = function.Evaluate(x);
     }
 
     // update the search distribution used for sampleDistribution()
@@ -215,7 +216,7 @@ namespace optimization {
   }
 
   // get best estimator for the optimum
-  arr = xmean; 
+   arr = xmean; 
 
   return xBestEver[N];
 
@@ -627,8 +628,7 @@ namespace optimization {
     // TolFunHist
     if (gen > funcValueHistory.size())
     {
-      range = maxElement(funcValueHistory, (int)funcValueHistory.size())
-          - minElement(funcValueHistory, (int)funcValueHistory.size());
+      range = arma::max(funcValueHistory) - arma::min(funcValueHistory);
       if (range <= stopTolFunHist)
          Log::Info << "TolFunHist: history of function value changes " << range
             << " stopTolFunHist=" << stopTolFunHist << std::endl;
