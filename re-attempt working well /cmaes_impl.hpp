@@ -222,52 +222,6 @@ namespace optimization {
 
   }
 
-  /** 
-   * Exhaustive test of the output of the eigendecomposition, needs O(n^3)
-   * operations writes to error file.
-   * @return number of detected inaccuracies
-   */
-   template<typename funcType>
-  int CMAES<funcType>::checkEigen(arma::vec diag, arma::mat Q)
-  {
-    // compute Q diag Q^T and Q Q^T to check
-    int res = 0;
-    for (double i = 0; i < N; i+=1)
-      for (double j = 0; j < N; j+=1) 
-      {
-        double cc = 0., dd = 0.;
-        for (int k = 0; k < N; ++k)
-        {
-          cc += diag[k]*Q(i,k)*Q(j,k);
-          dd += Q(i,k)*Q(j,k);
-        }
-        // check here, is the normalization the right one?
-        const bool cond1 = fabs(cc - C(i > j ? i : j , i > j ? j : i)) / sqrt(C(i,i)* C(j,j)) > double(1e-10);
-        const bool cond2 = fabs(cc - C(i > j ? i : j , i > j ? j : i)) > double(3e-14);
-        if (cond1 && cond2)
-        {
-          std::stringstream s;
-          s << i << " " << j << ": " << cc << " " << C(i > j ? i : j , i > j ? j : i)
-              << ", " << cc - C( i > j ? i : j , i > j ? j : i);
-          
-          Log::Warn << "eigen(): imprecise result detected " << s.str()
-                << std::endl;
-          ++res;
-        }
-        if (std::fabs(dd - (i == j)) > double(1e-10))
-        {
-          std::stringstream s;
-          s << i << " " << j << " " << dd;
-          
-            Log::Warn << "eigen(): imprecise result detected (Q not orthog.)"
-                << s.str() << std::endl;
-          ++res;
-        }
-      }
-    return res;
-  }
-
-
    template<typename funcType>
   void CMAES<funcType>::sortIndex(const arma::vec rgFunVal, arma::vec& iindex, int n)
   {
@@ -642,6 +596,7 @@ namespace optimization {
       cTemp += (sigma*std::sqrt(C(i,i)) < stopTolX) ? 1 : 0;
       cTemp += (sigma*pc[i] < stopTolX) ? 1 : 0;
     }
+    
     if (cTemp == 2*N)
     {
        Log::Info << "TolX: object variable changes below " << stopTolX << std::endl;
@@ -739,17 +694,13 @@ namespace optimization {
     }
 
      if (!arma::eig_sym(rgD, B, C))
-        assert("eigen decomposition failed in neuro_cmaes::eigen()");
+        Log::Warn << "eigen decomposition failed in neuro_cmaes::eigen()";
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
     minEW = rgD.min();
     maxEW = rgD.max();
 
-    if (doCheckEigen) // needs O(n^3)! writes, in case, error message in error file
-      checkEigen(rgD, B);
-
-    for (int i = 0; i < N; ++i)
-      rgD[i] = std::sqrt(rgD[i]);
+    rgD = arma::sqrt(rgD);
 
     eigensysIsUptodate = true;
     genOfEigensysUpdate = gen;
