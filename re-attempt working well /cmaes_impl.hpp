@@ -201,15 +201,13 @@ namespace optimization {
   {
     // Generate lambda new search points, sample population
     samplePopulation();
-
     arma::mat fit(1,N);
 
     // evaluate the new search points using the given evaluate function by the user
     for (int i = 0; i < lambda; ++i)
     {
-      for (int j=0; j<N; j++) fit(0,j) = population(i,j);
-
-      arFunvals[i] = function.Evaluate(fit);
+      arma::mat x(N,1);  x = population.submat(i, 0, i, N-1);
+    arFunvals[i] = function.Evaluate(x);
     }
 
     // update the search distribution used for sampleDistribution()
@@ -217,7 +215,7 @@ namespace optimization {
   }
 
   // get best estimator for the optimum
-  for (int i=0; i<N; i++) arr[i] = xmean[i]; 
+  arr = xmean; 
 
   return xBestEver[N];
 
