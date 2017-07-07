@@ -14,6 +14,7 @@
 
 #include <mlpack/core.hpp>
 #include <armadillo>
+#include <iostream>
 
 namespace mlpack {
 namespace optimization {
@@ -26,15 +27,18 @@ namespace test {
 //! fitness offsprings.
 class cmaesTestFunction
 {
+
  public:
-  //! Nothing to do for the constructor.
-  cmaesTestFunction() { }
-
   //! Return 3 (the number of functions) = the variable N in CMAES class for dimension
-  size_t NumFunctions() const;
+ ssize_t NumFunctions(void){ return 3; }
 
-  //! Evaluate a function.
-  double Evaluate(arma::mat& coordinates);
+ double Evaluate(arma::mat& coordinates)
+	{
+	 	return (-std::exp(-std::abs(coordinates[0])) + 
+	            std::pow(coordinates[1], 2) + 
+	            std::pow(coordinates[2], 4) + 3 * std::pow(coordinates[2], 2));
+	}
+
 };
 
 } // namespace test

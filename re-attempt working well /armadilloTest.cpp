@@ -15,6 +15,11 @@ int main()
 	vec st(6);
 	st[0] = 3; st[1] = 1; st[2] = 2; st[3] = 23; st[4] = 231; st[5] = 0.2;
 	
+	arma::mat start(1,3); start.fill(0.5);
+
+	start[0] = 1234321;
+
+	cout << start[0];
 
     std::cout <<"before " << endl << 10*st << std::endl;
 
