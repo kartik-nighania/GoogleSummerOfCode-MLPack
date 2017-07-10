@@ -13,9 +13,9 @@ using namespace arma;
 int main()
 {	
 	vec st(6);
-	st[0] = 3; st[1] = 1; st[2] = 2; st[3] = 23; st[4] = 231; st[5] = 0.2;
+	st[0] = 0; st[1] = 2; st[2] = 2; st[3] = 23; st[4] = 231; st[5] = 324; st[6] = 8888;
 
-	cout << "here it is " << (st % st);
+	cout << "here it is " << st;
 	
 	arma::mat start(1,3); start.fill(0.5);
 
@@ -23,7 +23,7 @@ int main()
 
 	cout << start[0];
 
-    std::cout <<"before " << endl << 10*st << std::endl;
+    std::cout << endl <<"before " << endl << 10*st << std::endl;
 
 	uvec x = (find(st < 5));
 	double d =x.n_rows;
