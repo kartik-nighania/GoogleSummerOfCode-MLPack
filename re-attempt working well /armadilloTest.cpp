@@ -14,6 +14,8 @@ int main()
 {	
 	vec st(6);
 	st[0] = 3; st[1] = 1; st[2] = 2; st[3] = 23; st[4] = 231; st[5] = 0.2;
+
+	cout << "here it is " << (st % st);
 	
 	arma::mat start(1,3); start.fill(0.5);
 
