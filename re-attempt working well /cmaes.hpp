@@ -26,32 +26,6 @@ double iters = -1.0, double evalDiff = 1e-14);
 
 double Optimize(arma::mat& arr);
 
-double maxElement(const arma::vec rgd, int len)
-{
-double ans = DBL_MIN;
-
-for (int i=0; i<len; i++)
-  if (rgd[i] > ans)
-  {
-    ans = rgd[i];
-  }
-
-return ans;
-}
-
-double minElement(const arma::vec rgd, int len)
-{
-double ans = DBL_MAX;
-
-for (int i=0; i<len; i++)
-  if (rgd[i] < ans)
-  {
-    ans = rgd[i];
-  }
-
-return ans;
-}
-
  private:
 /* Input parameters. */
 //! The instantiated function.
