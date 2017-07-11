@@ -160,7 +160,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     init(arFunvals);
 
     arma::mat x(N, 1);
-    double funs;
+    double funs = 0;
     double numFun = function.NumFunctions();
 
   while (!testForTermination())
