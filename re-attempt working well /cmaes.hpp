@@ -24,7 +24,7 @@ class CMAES
 CMAES(funcType& function, arma::mat& start, arma::mat& stdDivs,
 double iters = -1.0, double evalDiff = 1e-14);
 
-int getSampleSize(void){ return lambda; }
+int getSampleSize(void){ return lambda;}
 
 int getMu(void){ return mu;}
 

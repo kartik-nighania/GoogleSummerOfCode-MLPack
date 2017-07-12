@@ -26,9 +26,9 @@ using namespace mlpack::optimization::test;
 
 int main()
 {
-  cmaesTestFunction test;
+/*  cmaesTestFunction test;
   
-  ssize_t N = test.NumFunctions();
+  int N = test.NumFunctions();
 
   arma::mat start(N,1); start.fill(0.5); 
   arma::mat initialStdDeviations(N,1); initialStdDeviations.fill(1.5);
@@ -48,7 +48,7 @@ cout <<
   cout << coordinates[0] << endl;
   cout << coordinates[1] << endl;
   cout << coordinates[2] << endl;
-/*
+*/
 
  for (size_t i = 10; i < 50; i += 5)
   {
@@ -71,7 +71,6 @@ cout <<
       cout << coordinates[j] << " expected  1.0, 1e-3" << endl;
   }
 
-*/
 return 0;
 }
 
