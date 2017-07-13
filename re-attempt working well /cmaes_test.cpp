@@ -12,8 +12,7 @@
 #include <mlpack/core.hpp>
 
 #include "cmaes.hpp"
-#include "test_function.hpp"
-
+#include <mlpack/core/optimizers/sgd/test_function.hpp>
 #include <mlpack/core/optimizers/lbfgs/test_functions.hpp>
 
 #include <armadillo>
@@ -26,14 +25,14 @@ using namespace mlpack::optimization::test;
 
 int main()
 {
-/*  cmaesTestFunction test;
+  SGDTestFunction test;
   
-  int N = test.NumFunctions();
+  size_t N = test.NumFunctions();
 
   arma::mat start(N,1); start.fill(0.5); 
   arma::mat initialStdDeviations(N,1); initialStdDeviations.fill(1.5);
 
-  CMAES<cmaesTestFunction> s(test,start,initialStdDeviations,10000,1e-18);
+  CMAES<SGDTestFunction> s(test,start,initialStdDeviations,10000,1e-18);
 
   arma::mat coordinates(N,1);
   double result = s.Optimize(coordinates);
@@ -48,7 +47,8 @@ cout <<
   cout << coordinates[0] << endl;
   cout << coordinates[1] << endl;
   cout << coordinates[2] << endl;
-*/
+
+/*
 
  for (size_t i = 10; i < 50; i += 5)
   {
@@ -71,6 +71,7 @@ cout <<
       cout << coordinates[j] << " expected  1.0, 1e-3" << endl;
   }
 
+*/
 return 0;
 }
 
