@@ -11,11 +11,10 @@
  */
 #include <mlpack/core.hpp>
 
-#include "cmaes.hpp"
 #include <mlpack/core/optimizers/sgd/test_function.hpp>
 #include <mlpack/core/optimizers/lbfgs/test_functions.hpp>
 
-#include <armadillo>
+#include "cmaes.hpp"
 
 using namespace std;
 using namespace arma;
@@ -24,7 +23,10 @@ using namespace mlpack::optimization;
 using namespace mlpack::optimization::test;
 
 int main()
-{
+{ 
+
+  // SGD TEST CASE PASS
+ mlpack::math::RandomSeed(std::time(NULL));
   SGDTestFunction test;
   
   size_t N = test.NumFunctions();
@@ -48,30 +50,6 @@ cout <<
   cout << coordinates[1] << endl;
   cout << coordinates[2] << endl;
 
-/*
-
- for (size_t i = 10; i < 50; i += 5)
-  {
-    // Create the generalized Rosenbrock function.
-    GeneralizedRosenbrockFunction test(i);
-
-    int N = test.NumFunctions();
-
-  arma::mat start(N, 1); start.fill(1);
-  arma::mat initialStdDeviations(N, 1); initialStdDeviations.fill(1);
-
-    CMAES<GeneralizedRosenbrockFunction> s(test, start,
-    initialStdDeviations, 1e+25, 1e-10);
-
-    arma::mat coordinates(N, 1);
-    double result = s.Optimize(coordinates);
-
-   cout << result << " expected = 1e-10" << endl;
-    for (size_t j = 0; j < i; ++j)
-      cout << coordinates[j] << " expected  1.0, 1e-3" << endl;
-  }
-
-*/
 return 0;
 }
 

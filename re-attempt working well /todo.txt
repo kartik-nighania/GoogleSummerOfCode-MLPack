@@ -1,3 +1,0 @@
-function value and history
-min max function
-4th comment DBL_DIG

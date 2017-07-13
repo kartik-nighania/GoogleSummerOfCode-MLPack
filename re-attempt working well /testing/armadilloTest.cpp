@@ -1,12 +1,12 @@
-#pragma once
-
-#include <ctime>
+#include <iostream>
 #include <cmath>
 
-/**
- * @class Random
- * A pseudo random number generator.
- */
+#include <mlpack/core.hpp>
+
+using namespace std;
+using namespace arma;
+using namespace mlpack;
+
 template<typename T>
 class Random
 {
@@ -88,3 +88,31 @@ class Random
   }
 };
 
+
+int main()
+
+{	
+	Random<double> rand;
+	math::RandomSeed(std::time(NULL));
+	cout << "here we go " << math::Random() << "  and  " << rand.gauss() << endl;
+	vec st(6);
+	st[0] = 0; st[1] = 2; st[2] = 2; st[3] = 23; st[4] = 231; st[5] = 324; st[6] = 8888;
+
+	cout << "here it is " << st;
+	
+	arma::mat start(1,3); start.fill(0.5);
+
+	start[0] = 1234321;
+
+	cout << start[0];
+
+    std::cout << endl <<"before " << endl << 10*st << std::endl;
+
+	uvec x = (find(st < 5));
+	double d =x.n_rows;
+
+    std::cout <<"after "<< d << std::endl;
+
+
+	return 0;
+}
