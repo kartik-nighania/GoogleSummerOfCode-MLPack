@@ -40,10 +40,10 @@ BOOST_AUTO_TEST_CASE(SimpleCMAESTestFunction)
   arma::mat start(N, 1); start.fill(0.5);
   arma::mat initialStdDeviations(N, 1); initialStdDeviations.fill(1.5);
 
-  CMAES<SGDTestFunction> s(test, start, initialStdDeviations, 10000, 1e-18);
+  CMAES s(N, start, initialStdDeviations, 10000, 1e-18);
 
   arma::mat coordinates(N, 1);
-  double result = s.Optimize(coordinates);
+  double result = s.Optimize(test, coordinates);
 
   BOOST_REQUIRE_CLOSE(result, -1.0, 0.05);
   BOOST_REQUIRE_SMALL(coordinates[0], 1e-3);
