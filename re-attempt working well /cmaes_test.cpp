@@ -100,7 +100,7 @@ cout <<
   arma::mat start1(dim,1); start1.fill(0.5); 
   arma::mat initialStdDeviations1(dim,1); initialStdDeviations1.fill(1.5);
 
-  CMAES test1(dim, start1, initialStdDeviations1, 50000, 1e-7);
+  CMAES test1(dim, start1, initialStdDeviations1, 50000, 1e-8);
 
   LogisticRegression<arma::mat> lr(shuffledData, shuffledResponses, test1, 0.5);
 
