@@ -226,5 +226,4 @@ BOOST_AUTO_TEST_CASE(feedForwardNetworkCMAES)
  BuildVanillaNetwork<>
 (irisTrainData, irisTrainLabels, irisTestData, irisTestLabels, 3, 8, 70, 0.1);
 }
-
 BOOST_AUTO_TEST_SUITE_END();

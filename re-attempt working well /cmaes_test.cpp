@@ -12,23 +12,83 @@
 #include <mlpack/core.hpp>
 
 
+#include <mlpack/core/optimizers/rmsprop/rmsprop.hpp>
 #include <mlpack/methods/logistic_regression/logistic_regression.hpp>
 #include <mlpack/core/optimizers/sgd/test_function.hpp>
+#include <mlpack/core/optimizers/sgd/update_policies/vanilla_update.hpp>
+#include <mlpack/methods/ann/layer/layer.hpp>
+#include <mlpack/methods/ann/ffn.hpp>
+
 #include "cmaes.hpp"
 
 using namespace std;
 using namespace arma;
 using namespace mlpack;
+using namespace mlpack::ann;
 using namespace mlpack::optimization;
 using namespace mlpack::optimization::test;
 
 using namespace mlpack::distribution;
 using namespace mlpack::regression;
 
+/**
+ * Train and evaluate a vanilla network with the specified structure.
+ */
+template<typename MatType = arma::mat>
+void BuildVanillaNetwork(MatType& trainData,
+                         MatType& trainLabels,
+                         MatType& testData,
+                         MatType& testLabels,
+                         const size_t outputSize,
+                         const size_t hiddenLayerSize,
+                         const size_t maxEpochs,
+                         const double classificationErrorThreshold)
+{
+  FFN<NegativeLogLikelihood<> > model;
+  model.Add<Linear<> >(trainData.n_rows, hiddenLayerSize);
+  model.Add<SigmoidLayer<> >();
+  model.Add<Linear<> >(hiddenLayerSize, outputSize);
+  model.Add<LogSoftMax<> >();
+
+
+  int dim = trainData.n_rows * hiddenLayerSize +  hiddenLayerSize * outputSize;
+  arma::mat start1(dim, 1); start1.fill(0.5);
+  arma::mat initialStdDeviations1(dim, 1); initialStdDeviations1.fill(0.3);
+
+  CMAES opt(dim, start1, initialStdDeviations1, 50000, 1e-8);
+  model.Train(trainData, trainLabels, opt);
+
+  MatType predictionTemp;
+  model.Predict(testData, predictionTemp);
+  MatType prediction = arma::zeros<MatType>(1, predictionTemp.n_cols);
+
+  for (size_t i = 0; i < predictionTemp.n_cols; ++i)
+  {
+    prediction(i) = arma::as_scalar(arma::find(
+        arma::max(predictionTemp.col(i)) == predictionTemp.col(i), 1)) + 1;
+  }
+
+  size_t error = 0;
+  for (size_t i = 0; i < testData.n_cols; i++)
+  {
+    if (int(arma::as_scalar(prediction.col(i))) ==
+        int(arma::as_scalar(testLabels.col(i))))
+    {
+      error++;
+    }
+  }
+
+  double classificationError = 1 - double(error) / testData.n_cols;
+  cout << "require " << classificationError << " <= " << classificationErrorThreshold << endl;
+
+}
+
+
 int main()
 { 
 mlpack::math::RandomSeed(std::time(NULL));
- 
+
+
  // SGD TEST CASE PASS
  
   SGDTestFunction test;
@@ -42,7 +102,7 @@ mlpack::math::RandomSeed(std::time(NULL));
 
   arma::mat coordinates(N,1);
   double result = s.Optimize(test, coordinates);
-
+/*
 cout << 
   "BOOST_REQUIRE_CLOSE(result, -1.0, 0.05);   \n" <<
   "BOOST_REQUIRE_SMALL(coordinates[0], 1e-3); \n" <<
@@ -53,7 +113,7 @@ cout <<
   cout << coordinates[0] << endl;
   cout << coordinates[1] << endl;
   cout << coordinates[2] << endl;
-
+*/
   // Generate a two-Gaussian dataset.
   GaussianDistribution g1(arma::vec("1.0 1.0 1.0"), arma::eye<arma::mat>(3, 3));
   GaussianDistribution g2(arma::vec("9.0 9.0 9.0"), arma::eye<arma::mat>(3, 3));
@@ -106,10 +166,52 @@ cout <<
 
   // Ensure that the error is close to zero.
   const double acc = lr.ComputeAccuracy(data, responses);
-  cout << "got this value = " << acc << " should be = 100.0 with tolerance = 0.3" << endl; // 0.3% error tolerance.
+ // cout << "got this value = " << acc << " should be = 100.0 with tolerance = 0.3" << endl; // 0.3% error tolerance.
 
   const double testAcc = lr.ComputeAccuracy(testData, testResponses);
-cout << "got this value = " << testAcc << " should be = 100.0 with tolerance = 0.3" << endl;
+//cout << "got this value = " << testAcc << " should be = 100.0 with tolerance = 0.3" << endl;
+
+//*************************************************************************************************************
+//neural network 
+//Load the dataset.
+  arma::mat irisTrainData;
+  data::Load("iris_train.csv", irisTrainData, true);
+ 
+ //normalize train data
+ double minVal=0,range=1;
+ for(int i=0; i<irisTrainData.n_rows; i++)
+ {
+   minVal = irisTrainData.row(i).min(); 
+   range  = irisTrainData.row(i).max() - minVal;
+   irisTrainData.row(i) =  (irisTrainData.row(i) - minVal)/range;
+ }
+
+ arma::mat irisTrainLabels;
+ data::Load("iris_train_labels.csv", irisTrainLabels, true);
+
+ arma::mat irisTestData;
+ data::Load("iris_test.csv", irisTestData, true);
+
+  //normalize test data
+ for(int i=0; i<irisTestData.n_rows; i++)
+ {
+  minVal = irisTestData.row(i).min(); 
+  range  = irisTestData.row(i).max() - minVal;
+  irisTestData.row(i) =  (irisTestData.row(i) - minVal)/range;
+ }
+
+   arma::mat irisTestLabels;
+    data::Load("iris_test_labels.csv", irisTestLabels, true);
+
+    data::Save("answerTrain.csv", irisTrainData, true);
+    data::Save("answerTest.csv", irisTestData, true);
+    data::Save("answerTrainLabels.csv", irisTrainLabels, true);
+    data::Save("answerTestLabels.csv", irisTestLabels, true);
+
+
+
+ BuildVanillaNetwork<>
+(irisTrainData, irisTrainLabels, irisTestData, irisTestLabels, 3, 8, 70, 0.1);
 
 return 0;
 }
