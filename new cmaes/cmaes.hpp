@@ -88,13 +88,8 @@ double Optimize(funcType& function, double* arr);
   int N;
   //! Initial search space vector.
   double* xstart;
-  //! A typical value for a search space vector.
-  double* typicalX;
-  //! Indicates that the typical x is the initial point.
-  bool typicalXcase;
   //! Initial standard deviations.
-  double* rgInitialStds;
-  double* rgDiffMinChange;
+  arma::vec rgInitialStds;
 
   /* Termination parameters. */
   //! Maximal number of objective function evaluations.
@@ -160,7 +155,7 @@ double Optimize(funcType& function, double* arr);
   //! Mean x vector, "parent".
   double* xmean;
   //! Best sample ever.
-  double* xBestEver;
+  arma::vec xBestEver;
   //! x-vectors, lambda offspring.
   double** population;
   //! Sorting index of sample population.
@@ -175,17 +170,14 @@ double Optimize(funcType& function, double* arr);
   double** B;
   //! Axis lengths.
   double* rgD;
-
   //! Anisotropic evolution path (for covariance).
-  double* pc;
+  arma::vec pc;
   //! Isotropic evolution path (for step length).
-  double* ps;
+  arma::vec ps;
   //! Last mean.
-  double* xold;
-  //! Output vector.
-  double* output;
+  arma::vec xold;
   //! B*D*z.
-  double* BDz;
+  arma::vec BDz;
   //! Temporary (random) vector used in different places.
   double* tempRandom;
   //! Objective function values of the population.
@@ -223,7 +215,6 @@ void samplePopulation();
 void updateDistribution(double* fitnessValues);
 //! test for termination of the algorithm if the condition values are reached.
 bool testForTermination();
-void testMinStdDevs(void);
 
 double square(double d)
 {

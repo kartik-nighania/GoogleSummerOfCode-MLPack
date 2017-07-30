@@ -27,8 +27,6 @@ double iters, double evalEnd)
       :
         N(-1),
         xstart(0),
-        rgInitialStds(0),
-        rgDiffMinChange(0),
         stopMaxFunEvals(-1),
         facmaxeval(1.0),
         stopMaxIter(-1.0),
@@ -71,7 +69,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
    stdDivs = 0.3;}
 
     xstart = new double[N]; 
-    rgInitialStds = new double[N];
+    rgInitialStds.set_size(N);
 
        for(int i = 0; i < N; i++)
           xstart[i] = start;
@@ -158,7 +156,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
   {
      arFunvals = new double[lambda];
     init(arFunvals);
-   int funNo = function.NumFunctions(); std::cout << "fin No " << funNo << std::endl;
+   int funNo = function.NumFunctions();
     
    // arma::Col<double> x(N);
 
@@ -265,23 +263,16 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     countevals = 0;
     state = INITIALIZED;
     dLastMinEWgroesserNull = double(1);
-    pc = new double[N];
-    ps = new double[N];
+    pc.set_size(N);
+    ps.set_size(N);
     tempRandom = new double[N+1];
-    BDz = new double[N];
+    BDz.set_size(N);
     xmean = new double[N+2];
     xmean[0] = N;
     ++xmean;
-    xold = new double[N+2];
-    xold[0] = N;
-    ++xold;
-    xBestEver = new double[N+3];
-    xBestEver[0] = N;
-    ++xBestEver;
+    xold.set_size(N);
+    xBestEver.set_size(N+2);
     xBestEver[N] = std::numeric_limits<double>::max();
-    output = new double[N+2];
-    output[0] = N;
-    ++output;
     rgD = new double[N];
     C = new double*[N];
     B = new double*[N];
@@ -344,8 +335,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
 
     for(int i = 0; i < N; ++i)
       xmean[i] = xold[i] = xstart[i];
-    // use in case xstart as typicalX
-    if(typicalXcase)
+   
       for(int i = 0; i < N; ++i)
         xmean[i] += sigma*rgD[i]*rand.gauss();
 
@@ -379,8 +369,6 @@ void CMAES::samplePopulation()
       }
     }
 
-    testMinStdDevs();
-
   for(int iNk = 0; iNk < lambda; ++iNk)
     { // generate scaled random vector D*z
       double* rgrgxink = population[iNk];
@@ -404,19 +392,6 @@ void CMAES::samplePopulation()
       ++gen;
     state = SAMPLED;
 
-  }
-
-   /**
-   * Treats minimal standard deviations and numeric problems. Increases sigma.
-   */
-  void CMAES::testMinStdDevs(void)
-  {
-    if(!rgDiffMinChange)
-      return;
-
-    for(int i = 0; i < N; ++i)
-      while(sigma*std::sqrt(C[i][i]) < rgDiffMinChange[i])
-        sigma *= std::exp(double(0.05) + cs / damps);
   }
 
   /** Core procedure of the CMA-ES algorithm. Sets a new mean
@@ -542,8 +517,7 @@ for(int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
    */
 
 bool CMAES::testForTermination()
-  { 
-    std::cout << "entering testForTermination" << std::endl;
+  {
      double range, fac;
     int iAchse, iKoo;
     int diag = diagonalCov == 1 || diagonalCov >= gen;
@@ -685,7 +659,7 @@ void CMAES::updateEigensystem(bool force)
           && eigenTimings.tictoctime > updateCmode.maxtime* eigenTimings.totaltime
           && eigenTimings.tictoctime > 0.0002)
         {
-          std::cout << " time return happened " << std::endl << std::endl << std::endl;
+          Log::Info << " time return happened " << std::endl;
         return;
       }
     }
