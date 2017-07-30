@@ -73,7 +73,7 @@ double iters = 0, double evalEnd = 0);
 * @return inal objective value obtained.
 */
 template<typename funcType>
-double Optimize(funcType& function, double* arr);
+double Optimize(funcType& function, arma::mat& arr);
 
  private:
 //! stores the fitness values of functions
@@ -87,7 +87,7 @@ double Optimize(funcType& function, double* arr);
 
   int N;
   //! Initial search space vector.
-  double* xstart;
+  arma::vec xstart;
   //! Initial standard deviations.
   arma::vec rgInitialStds;
 
@@ -126,7 +126,7 @@ double Optimize(funcType& function, double* arr);
   /**
    * Weights used to recombinate the mean sum up to one.
    */
-  double* weights;
+  arma::vec weights;
   /**
    * Damping parameter for step-size adaption, d = inifinity or 0 means adaption
    * is turned off, usually close to one.
@@ -153,11 +153,11 @@ double Optimize(funcType& function, double* arr);
   //! Step size.
   double sigma;
   //! Mean x vector, "parent".
-  double* xmean;
+  arma::vec xmean;
   //! Best sample ever.
   arma::vec xBestEver;
   //! x-vectors, lambda offspring.
-  double** population;
+  arma::mat population;
   //! Sorting index of sample population.
   int* index;
   //! History of function values.
@@ -182,8 +182,6 @@ double Optimize(funcType& function, double* arr);
   double* tempRandom;
   //! Objective function values of the population.
   double* functionValues;
-  //!< Public objective function value array returned by init().
-  double* publicFitness;
 
   //! Generation number.
   double gen;
@@ -208,7 +206,7 @@ void updateEigensystem(bool force);
 //! adapt the covariance matrix to the new distribution
 void adaptC2(const int hsig);
 //! initialize all the variables used in CMAES with default values
-void init(double* func);
+void init();
 //! creates the population from a gaussian normal distribution = lambda
 void samplePopulation();
 //! updates the distribution according to the best fitness value selected.

@@ -26,7 +26,7 @@ using namespace mlpack::optimization;
     
     double NumFunctions(){return 49;}
 
-    double Evaluate(double *x, int i)
+    double Evaluate(arma::mat& x, int i)
     {
       return 100.*pow((pow((x[i]),2)-x[i+1]),2) + pow((1.-x[i]),2);
     }
@@ -39,7 +39,7 @@ using namespace mlpack::optimization;
     
     double NumFunctions(){return 3;}
 
-   double Evaluate(double* coordinates, int i)
+   double Evaluate(arma::mat& coordinates, int i)
     const
     {
       switch (i)
@@ -69,7 +69,7 @@ mlpack::math::RandomSeed(std::time(NULL));
   CMAES s(50,0.5, 0.3, 100000, 1e-13);
 
 //  arma::mat coordinates(N,1);
-  double coordinates[50];
+  arma::vec coordinates(50);
   double result = s.Optimize(test, coordinates);
 
   cout << endl << result << endl;
@@ -81,7 +81,7 @@ std::cout << std::endl;
   CMAES fun(3, 0.5, 0.3, 100000, 1e-13);
 
 //  arma::mat coordinates(N,1);
-  double coordinates1[3];
+  arma::vec coordinates1(3);
   double result1 = fun.Optimize(testing, coordinates1);
 
   cout << endl << result1 << endl;

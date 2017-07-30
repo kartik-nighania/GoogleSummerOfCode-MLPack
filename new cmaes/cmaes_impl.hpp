@@ -26,7 +26,6 @@ double start, double stdDivs,
 double iters, double evalEnd)
       :
         N(-1),
-        xstart(0),
         stopMaxFunEvals(-1),
         facmaxeval(1.0),
         stopMaxIter(-1.0),
@@ -68,11 +67,10 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
 << std::endl;
    stdDivs = 0.3;}
 
-    xstart = new double[N]; 
+    xstart.set_size(N); 
     rgInitialStds.set_size(N);
 
-       for(int i = 0; i < N; i++)
-          xstart[i] = start;
+          xstart.fill(start);
 
         for(int i = 0; i < N; ++i)
           rgInitialStds[i] = stdDivs;
@@ -84,7 +82,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     if (mu <= 0)
       mu = lambda / 2;
 
-        weights = new double[mu];
+        weights.set_size(mu);
       for (int i = 0; i < mu; ++i) weights[i] = log(mu + 1.) - log(i + 1.);
 
 
@@ -152,13 +150,13 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
   }
 
   template<typename funcType>
-  double CMAES::Optimize(funcType& function, double* arr)
+  double CMAES::Optimize(funcType& function, arma::mat& arr)
   {
      arFunvals = new double[lambda];
-    init(arFunvals);
+    init();
    int funNo = function.NumFunctions();
     
-   // arma::Col<double> x(N);
+    arma::Col<double> x(N);
 
   while (!testForTermination())
   {
@@ -170,17 +168,17 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     // function by the user
     for (int i = 0; i < lambda; ++i)
    {
-     // x = population.submat(i, 0, i, N-1).t();
+      x = population.submat(i, 0, i, N-1).t();
 
    for (int j = 0; j < funNo; j++)
-     arFunvals[i] += function.Evaluate(population[i], j);
+     arFunvals[i] += function.Evaluate(x, j);
    }
     // update the search distribution used for sampleDistribution()
       updateDistribution(arFunvals);
   }
 
   // get best estimator for the optimum
-    for(int i=0; i<N; i++) arr[i] = xmean[i];
+  arr = xmean;
 
     double funs = 0;
     for (int j = 0; j < funNo; j++)
@@ -215,9 +213,8 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
           Cij = onemccov1ccovmu*Cij + ccov1 * (pc[i]*pc[j] + longFactor*Cij);
           for(int k = 0; k < mu; ++k)
           { // additional rank mu update
-            const double* rgrgxindexk = population[index[k]];
-            Cij += ccovmu*weights[k] * (rgrgxindexk[i] - xold[i])
-                * (rgrgxindexk[j] - xold[j]) / sigmasquare;
+            Cij += ccovmu*weights[k] * (population(index[k],i) - xold[i])
+                * (population(index[k],j) - xold[j]) / sigmasquare;
           }
         }
       // update maximal and minimal diagonal value
@@ -240,7 +237,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
    * pass them to updateDistribution()
    */
 
-  void CMAES::init(double* func)
+  void CMAES::init()
   {
     
     double trace(0);
@@ -267,16 +264,13 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     ps.set_size(N);
     tempRandom = new double[N+1];
     BDz.set_size(N);
-    xmean = new double[N+2];
-    xmean[0] = N;
-    ++xmean;
+    xmean.set_size(N);
     xold.set_size(N);
     xBestEver.set_size(N+2);
     xBestEver[N] = std::numeric_limits<double>::max();
     rgD = new double[N];
     C = new double*[N];
     B = new double*[N];
-    publicFitness = new double[lambda];
     functionValues = new double[lambda+1];
     functionValues[0] = lambda;
     ++functionValues;
@@ -293,15 +287,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     index = new int[lambda];
     for(int i = 0; i < lambda; ++i)
         index[i] = i;
-    population = new double*[lambda];
-    for(int i = 0; i < lambda; ++i)
-    {
-      population[i] = new double[N+2];
-      population[i][0] = N;
-      population[i]++;
-      for(int j = 0; j < N; j++)
-        population[i][j] = 0.0;
-    }
+    population.set_size(lambda,N+1);
 
     // initialize newed space
     for(int i = 0; i < lambda; i++)
@@ -333,13 +319,10 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     mindiagC = C[0][0];
     for(int i = 1; i < N; ++i) if(mindiagC > C[i][i]) mindiagC = C[i][i];
 
-    for(int i = 0; i < N; ++i)
-      xmean[i] = xold[i] = xstart[i];
+      xmean = xold = xstart;
    
       for(int i = 0; i < N; ++i)
         xmean[i] += sigma*rgD[i]*rand.gauss();
-
-      for(int i=0; i<lambda; i++) func[i] = publicFitness[i];
   }
 
   /**
@@ -371,10 +354,9 @@ void CMAES::samplePopulation()
 
   for(int iNk = 0; iNk < lambda; ++iNk)
     { // generate scaled random vector D*z
-      double* rgrgxink = population[iNk];
       for(int i = 0; i < N; ++i)
         if(diag)
-          rgrgxink[i] = xmean[i] + sigma*rgD[i]*rand.gauss();
+          population(iNk,i) = xmean[i] + sigma*rgD[i]*rand.gauss();
         else
           tempRandom[i] = rgD[i]*rand.gauss();
       if(!diag)
@@ -384,7 +366,7 @@ void CMAES::samplePopulation()
           for(int j = 0; j < N; ++j)
             sum += B[i][j]*tempRandom[j];
 
-          rgrgxink[i] = xmean[i] + sigma*sum;
+          population(iNk,i) = xmean[i] + sigma*sum;
         }
     }
 
@@ -413,7 +395,7 @@ void CMAES::updateDistribution(double* fitnessValues)
 
     // assign function values
     for(int i = 0; i < lambda; ++i)
-      population[i][N] = functionValues[i] = fitnessValues[i];
+      population(i,N) = functionValues[i] = fitnessValues[i];
 
     // Generate index
     sortIndex(fitnessValues, index, lambda);
@@ -431,10 +413,10 @@ for(int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
     funcValueHistory[0] = fitnessValues[index[0]];
 
     // update xbestever
-    if(xBestEver[N] > population[index[0]][N] || gen == 1)
+    if(xBestEver[N] > population(index[0],N) || gen == 1)
       for(int i = 0; i <= N; ++i)
       {
-        xBestEver[i] = population[index[0]][i];
+        xBestEver[i] = population(index[0],i);
         xBestEver[N+1] = countevals;
       }
 
@@ -445,7 +427,7 @@ for(int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
       xold[i] = xmean[i];
       xmean[i] = 0.;
       for(int iNk = 0; iNk < mu; ++iNk)
-        xmean[i] += weights[iNk]*population[index[iNk]][i];
+        xmean[i] += weights[iNk]*population(index[iNk],i);
       BDz[i] = sqrtmueffdivsigma*(xmean[i]-xold[i]);
     }
 
