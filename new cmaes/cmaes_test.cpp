@@ -9,7 +9,8 @@
  * 3-clause BSD license along with mlpack.  If not, see
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
-#include <mlpack/core.hpp>
+//#include <mlpack/core.hpp>
+#include <math.h>
 
 #include "cmaes.hpp"
 
@@ -23,13 +24,11 @@ using namespace mlpack::optimization;
   {
     public:
     
-    double NumFunctions(){return 2;}
+    double NumFunctions(){return 44;}
 
-    double Evaluate(arma::mat& x, int i)
+    double Evaluate(double *x, int i)
     {
-      if(i==0) return 100.*pow((pow((x[0]),2)-x[1]),2);
-      if(i==1) return pow((6.-x[0]),2);
-
+      return 100.*pow((pow((x[i]),2)-x[i+1]),2) + pow((1.-x[i]),2);
     }
 
   };
@@ -39,21 +38,18 @@ int main()
 mlpack::math::RandomSeed(std::time(NULL));
   
   rosenbrock test;
-  size_t N = 2;
 
-  arma::mat start(N,1); start.fill(0.5); 
-  arma::mat initialStdDeviations(N,1); initialStdDeviations.fill(0.3);
+  CMAES s(45,0.5, 0.3, 100000, 1e-13);
 
-  CMAES s(N,start,initialStdDeviations,10000,1e-18);
-
-  arma::mat coordinates(N,1);
+//  arma::mat coordinates(N,1);
+  double coordinates[45];
   double result = s.Optimize(test, coordinates);
 
   cout << endl << result << endl;
-  cout << coordinates[0] << endl;
-  cout << coordinates[1] << endl;
+for(int i=0; i<45; i++) std::cout << coordinates[i] << " ";
+std::cout << std::endl;
 
-  
+
 return 0;
 }
 

@@ -13,8 +13,8 @@
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 
-#include <mlpack/core/math/random.hpp>
-
+//#include <mlpack/core/math/random.hpp>
+#include "random.hpp"
 namespace mlpack {
 namespace optimization {
 
@@ -59,11 +59,11 @@ double iters = -1.0, double evalDiff = 1e-14);
 //! Population size. Number of samples per iteration
 size_t const SampleSize() const { return lambda; }
 //! modify the number of samples per iterations
-size_t const& SampleSize() { return lambda; }
+int const& SampleSize() { return lambda; }
 //! Number of individuals used to recompute the mean.
 size_t const getMu() const { return mu; }
 //! Modify number of individuals used to recompute the mean.
-size_t const& getMu() { return mu; }
+int const& getMu() { return mu; }
 //! the covariance matrix diagonal elements
 arma::mat DiagonalCovariance() const { return C.diag(); }
 /**
@@ -82,6 +82,7 @@ template<typename funcType>
 double Optimize(funcType& function, arma::mat& arr);
 
  private:
+ Random<double> rand;
 //! stores the fitness values of functions
 arma::vec arFunvals;
 //! Problem dimension, must stay constant.
@@ -201,6 +202,10 @@ void samplePopulation();
 void updateDistribution(const arma::vec& fitnessValues);
 //! test for termination of the algorithm if the condition values are reached.
 bool testForTermination();
+  void eigen(arma::vec& diag, arma::mat& Q, arma::vec& rgtmp);
+  void ql(arma::vec& d, arma::vec& e, arma::mat& V);
+   void householder(arma::mat& V, arma::vec& d, arma::vec& e);
+   double myhypot(double a, double b);
 };
 } // namespace optimization
 } // namespace mlpack
