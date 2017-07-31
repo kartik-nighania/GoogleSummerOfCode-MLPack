@@ -152,9 +152,9 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
   template<typename funcType>
   double CMAES::Optimize(funcType& function, arma::mat& arr)
   {
-     arFunvals = new double[lambda];
+     arFunvals.set_size(lambda);
     init();
-   int funNo = function.NumFunctions();
+    int funNo = function.NumFunctions();
     
     arma::Col<double> x(N);
 
@@ -163,7 +163,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     
     // Generate lambda new search points, sample population
     samplePopulation();
-   for(int g=0; g<lambda; g++) arFunvals[g] = 0;
+    arFunvals.fill(0);
     // evaluate the new search points using the given evaluate
     // function by the user
     for (int i = 0; i < lambda; ++i)
@@ -262,7 +262,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     dLastMinEWgroesserNull = double(1);
     pc.set_size(N);
     ps.set_size(N);
-    tempRandom = new double[N+1];
+    tempRandom.set_size(N+1);
     BDz.set_size(N);
     xmean.set_size(N);
     xold.set_size(N);
@@ -379,7 +379,7 @@ void CMAES::samplePopulation()
 * @param fitnessValues An array of \f$\lambda\f$ function values.
 * @return Mean value of the new distribution. */
 
-void CMAES::updateDistribution(double* fitnessValues)
+void CMAES::updateDistribution(arma::vec& fitnessValues)
 {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
     assert(state != UPDATED && "updateDistribution(): You need to call "
@@ -666,10 +666,8 @@ void CMAES::updateEigensystem(bool force)
    * @param Q (output) Columns are normalized eigenvectors.
    */
   
-  void CMAES::eigen(arma::vec& diag, arma::mat& Q, double* rgtmp)
+  void CMAES::eigen(arma::vec& diag, arma::mat& Q, arma::vec& rgtmp)
   {
-    assert(rgtmp && "eigen(): input parameter rgtmp must be non-NULL");
-
       for(int i = 0; i < N; ++i)
         for(int j = 0; j <= i; ++j)
           Q(i,j) = Q(j,i) = C(i,j);
@@ -720,14 +718,13 @@ void CMAES::updateEigensystem(bool force)
 
   /**
    * Symmetric tridiagonal QL algorithm, iterative.
-   * Computes the eigensystem from a tridiagonal matrix in roughtly 3N^3 operations
-   * code adapted from Java JAMA package, function tql2.
+   * Computes the eigensystem from a tridiagonal matrix
    * @param d input: Diagonale of tridiagonal matrix. output: eigenvalues.
    * @param e input: [1..n-1], off-diagonal, output from Householder
    * @param V input: matrix output of Householder. output: basis of
    *          eigenvectors, according to d
    */
-  void CMAES::ql(arma::vec& d, double* e, arma::mat& V)
+  void CMAES::ql(arma::vec& d, arma::vec& e, arma::mat& V)
   {
    
     double f(0);
@@ -735,10 +732,8 @@ void CMAES::updateEigensystem(bool force)
     const double eps(2.22e-16); // 2.0^-52.0 = 2.22e-16
 
     // shift input e
-    double* ep1 = e;
-    for(double *ep2 = e+1, *const end = e+N; ep2 != end; ep1++, ep2++)
-      *ep1 = *ep2;
-    *ep1 = double(0); // never changed again
+    for(int i=0; i<N-1; i++) e[i] = e[i+1];
+    e[N-1] = 0.;
 
     for(int l = 0; l < N; l++)
     {
@@ -828,7 +823,7 @@ void CMAES::updateEigensystem(bool force)
    * @param e output: [0..n-1], off diagonal (elements 1..n-1)
    */
 
-  void CMAES::householder(arma::mat& V, arma::vec& d, double* e)
+  void CMAES::householder(arma::mat& V, arma::vec& d, arma::vec& e)
   {
 
     for(int j = 0; j < N; j++)
@@ -871,7 +866,7 @@ void CMAES::updateEigensystem(bool force)
         e[i] = scale*g;
         h = h - f* g;
         dim1 = f - g;
-        memset((void *) e, 0, (size_t)i*sizeof(double));
+        for(int d=0; d<i; d++) e[d] = 0.;
 
         // apply similarity transformation to remaining columns
         for(int j = 0; j < i; j++)

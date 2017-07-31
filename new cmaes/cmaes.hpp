@@ -81,7 +81,7 @@ double Optimize(funcType& function, arma::mat& arr);
 //! Problem dimension, must stay constant.
 /* Input parameters. */
   //! Problem dimension, must stay constant.
-  double* arFunvals;
+  arma::vec arFunvals;
   double countevals;
   Timing eigenTimings;
 
@@ -179,7 +179,7 @@ double Optimize(funcType& function, arma::mat& arr);
   //! B*D*z.
   arma::vec BDz;
   //! Temporary (random) vector used in different places.
-  double* tempRandom;
+  arma::vec tempRandom;
   //! Objective function values of the population.
   double* functionValues;
 
@@ -210,7 +210,7 @@ void init();
 //! creates the population from a gaussian normal distribution = lambda
 void samplePopulation();
 //! updates the distribution according to the best fitness value selected.
-void updateDistribution(double* fitnessValues);
+void updateDistribution(arma::vec& fitnessValues);
 //! test for termination of the algorithm if the condition values are reached.
 bool testForTermination();
 
@@ -229,7 +229,7 @@ double minElement(const double* rgd, int len)
   return *std::min_element(rgd, rgd + len);
 }
 
-  void sortIndex(const double* rgFunVal, int* iindex, int n)
+  void sortIndex(arma::vec& rgFunVal, int* iindex, int n)
   {
     int i, j;
     for(i = 1, iindex[0] = 0; i < n; ++i)
@@ -244,10 +244,10 @@ double minElement(const double* rgd, int len)
     }
   }
 
- void eigen(arma::vec& diag, arma::mat& Q, double* rgtmp);
+ void eigen(arma::vec& diag, arma::mat& Q, arma::vec& rgtmp);
  int checkEigen(arma::vec& diag, arma::mat& Q);
- void ql(arma::vec& d, double* e, arma::mat& V);
- void householder(arma::mat& V, arma::vec& d, double* e);
+ void ql(arma::vec& d, arma::vec& e, arma::mat& V);
+ void householder(arma::mat& V, arma::vec& d, arma::vec& e);
  double myhypot(double a, double b);
 
 };
