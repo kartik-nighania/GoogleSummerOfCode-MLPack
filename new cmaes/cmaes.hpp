@@ -13,9 +13,6 @@
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 
-#include <mlpack/core/math/random.hpp>
-
-#include "random.hpp"
 #include "timings.hpp"
 
 namespace mlpack {
@@ -147,9 +144,6 @@ double Optimize(funcType& function, arma::mat& arr);
   struct { double modulo; double maxtime; } updateCmode;
   double facupdateCmode;
 
-  //!< Random number generator.
-  Random<double> rand;
-
   //! Step size.
   double sigma;
   //! Mean x vector, "parent".
@@ -159,10 +153,10 @@ double Optimize(funcType& function, arma::mat& arr);
   //! x-vectors, lambda offspring.
   arma::mat population;
   //! Sorting index of sample population.
-  int* index;
+  arma::uvec index;
   //! History of function values.
-  double* funcValueHistory;
-
+  arma::vec funcValueHistory;
+  int historySize;
   double chiN;
   //! Lower triangular matrix: i>=j for C[i][j].
   arma::mat C;
@@ -181,7 +175,7 @@ double Optimize(funcType& function, arma::mat& arr);
   //! Temporary (random) vector used in different places.
   arma::vec tempRandom;
   //! Objective function values of the population.
-  double* functionValues;
+  arma::vec functionValues;
 
   //! Generation number.
   double gen;
@@ -213,36 +207,6 @@ void samplePopulation();
 void updateDistribution(arma::vec& fitnessValues);
 //! test for termination of the algorithm if the condition values are reached.
 bool testForTermination();
-
-double square(double d)
-{
-  return d*d;
-}
-
-double maxElement(const double* rgd, int len)
-{
-  return *std::max_element(rgd, rgd + len);
-}
-
-double minElement(const double* rgd, int len)
-{
-  return *std::min_element(rgd, rgd + len);
-}
-
-  void sortIndex(arma::vec& rgFunVal, int* iindex, int n)
-  {
-    int i, j;
-    for(i = 1, iindex[0] = 0; i < n; ++i)
-    {
-      for(j = i; j > 0; --j)
-      {
-        if(rgFunVal[iindex[j - 1]] < rgFunVal[i])
-          break;
-        iindex[j] = iindex[j - 1]; // shift up
-      }
-      iindex[j] = i;
-    }
-  }
 
  void eigen(arma::vec& diag, arma::mat& Q, arma::vec& rgtmp);
  int checkEigen(arma::vec& diag, arma::mat& Q);

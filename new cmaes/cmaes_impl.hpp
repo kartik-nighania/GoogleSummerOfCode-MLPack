@@ -14,9 +14,8 @@
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 
 #include "cmaes.hpp"
-#include "random.hpp"
 #include "timings.hpp"
-
+#include <mlpack/core/math/random.hpp>
 
 namespace mlpack {
 namespace optimization {
@@ -30,7 +29,7 @@ double iters, double evalEnd)
         facmaxeval(1.0),
         stopMaxIter(-1.0),
         stopTolFun(1e-12),
-        stopTolFunHist(1e-13),
+        stopTolFunHist(1e-14),
         stopTolX(0),
         stopTolUpXFactor(1e3),
         lambda(-1),
@@ -271,29 +270,18 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     rgD.set_size(N);
     C.set_size(N,N);
     B.set_size(N,N);
-    functionValues = new double[lambda+1];
-    functionValues[0] = lambda;
-    ++functionValues;
-    const int historySize = 10 + (int) ceil(3.*10.*N/lambda);
-    funcValueHistory = new double[historySize + 1];
-    funcValueHistory[0] = (double) historySize;
-    funcValueHistory++;
-    
+    functionValues.set_size(lambda);
+    historySize = 10 + (int) ceil(3.*10.*N/lambda);
+    funcValueHistory.set_size(historySize);
 
-    index = new int[lambda];
-    for(int i = 0; i < lambda; ++i)
-        index[i] = i;
+    index.set_size(lambda);
+    for(int i = 0; i < lambda; ++i) index[i] = i;
     population.set_size(lambda,N+1);
 
-    // initialize newed space
-    for(int i = 0; i < lambda; i++)
-    {
-      functionValues[i] = std::numeric_limits<double>::max();
-    }
-    for(int i = 0; i < historySize; i++)
-    {
-      funcValueHistory[i] = std::numeric_limits<double>::max();
-    }
+    functionValues.fill(std::numeric_limits<double>::max());
+  
+    funcValueHistory.fill(std::numeric_limits<double>::max());
+
     B.zeros();
     B.diag().ones();
     C.zeros();
@@ -318,7 +306,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
       xmean = xold = xstart;
    
       for(int i = 0; i < N; ++i)
-        xmean[i] += sigma*rgD[i]*rand.gauss();
+        xmean[i] += sigma*rgD[i]*mlpack::math::RandNormal();
   }
 
   /**
@@ -341,8 +329,10 @@ void CMAES::samplePopulation()
       {
         for(int i = 0; i < N; ++i)
           rgD[i] = std::sqrt(C(i,i));
-        minEW = square(rgD.min());
-        maxEW = square(rgD.max());
+        minEW = rgD.min();
+        minEW *= minEW;
+        maxEW = rgD.max();
+        maxEW *= maxEW;
         eigensysIsUptodate = true;
         eigenTimings.start();
       }
@@ -352,9 +342,9 @@ void CMAES::samplePopulation()
     { // generate scaled random vector D*z
       for(int i = 0; i < N; ++i)
         if(diag)
-          population(iNk,i) = xmean[i] + sigma*rgD[i]*rand.gauss();
+          population(iNk,i) = xmean[i] + sigma*rgD[i]*mlpack::math::RandNormal();
         else
-          tempRandom[i] = rgD[i]*rand.gauss();
+          tempRandom[i] = rgD[i]*mlpack::math::RandNormal();
       if(!diag)
         for(int i = 0; i < N; ++i) // add mutation sigma*B*(D*z)
         {
@@ -394,7 +384,7 @@ void CMAES::updateDistribution(arma::vec& fitnessValues)
       population(i,N) = functionValues[i] = fitnessValues[i];
 
     // Generate index
-    sortIndex(fitnessValues, index, lambda);
+     index = arma::sort_index(fitnessValues);
     // Test if function values are identical, escape flat fitness
     if (fitnessValues[index[0]] == fitnessValues[index[(int) lambda / 2]])
     {
@@ -404,7 +394,7 @@ void CMAES::updateDistribution(arma::vec& fitnessValues)
       << std::endl << "Reconsider the formulation of the objective function";
     }
 
-for(int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
+for(int i = (int)historySize - 1; i > 0; --i)
       funcValueHistory[i] = funcValueHistory[i - 1];
     funcValueHistory[0] = fitnessValues[index[0]];
 
@@ -507,12 +497,12 @@ bool CMAES::testForTermination()
           << " <= stopFitness (" << stStopFitness.val << ")" << std::endl;
           return true;
     }
-//std::cout << *(funcValueHistory - 1)-1 << std::endl;
     // TolFun
-    range = std::max(maxElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        maxElement(functionValues, lambda)) -
-        std::min(minElement(funcValueHistory, (int) std::min(gen, *(funcValueHistory - 1))),
-        minElement(functionValues, lambda));
+    int rangeIndex = (int) std::min((int)gen, historySize-1);
+    range = std::max( arma::max(funcValueHistory.subvec(0, rangeIndex)) ,
+        functionValues.max()) -
+        std::min(arma::min(funcValueHistory.subvec(0, rangeIndex)),
+        functionValues.min());
 
     if(gen > 0 && range <= stopTolFun)
     {
@@ -520,12 +510,11 @@ bool CMAES::testForTermination()
           << " < stopTolFun=" << stopTolFun << std::endl;
            return true;
     }
-//std::cout << *(funcValueHistory - 1)-1 << std::endl;
+
     // TolFunHist
-    if(gen > *(funcValueHistory - 1))
+    if(gen > historySize)
     {
-      range = maxElement(funcValueHistory, (int) *(funcValueHistory - 1))
-          - minElement(funcValueHistory, (int) *(funcValueHistory - 1));
+      range = funcValueHistory.max() - funcValueHistory.min();
       if(range <= stopTolFunHist)
       {
         std::cout << "TolFunHist: history of function value changes " << range
