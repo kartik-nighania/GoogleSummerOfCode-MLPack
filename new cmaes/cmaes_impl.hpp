@@ -209,7 +209,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
       for(int i = 0; i < N; ++i)
         for(int j = diag ? i : 0; j <= i; ++j)
         {
-          double& Cij = C[i][j];
+          double& Cij = C(i,j);
           Cij = onemccov1ccovmu*Cij + ccov1 * (pc[i]*pc[j] + longFactor*Cij);
           for(int k = 0; k < mu; ++k)
           { // additional rank mu update
@@ -218,10 +218,10 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
           }
         }
       // update maximal and minimal diagonal value
-      maxdiagC = mindiagC = C[0][0];
+      maxdiagC = mindiagC = C(0,0);
       for(int i = 1; i < N; ++i)
       {
-        const double& Cii = C[i][i];
+        const double& Cii = C(i,i);
         if(maxdiagC < Cii)
           maxdiagC = Cii;
         else if(mindiagC > Cii)
@@ -247,7 +247,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
 
     chiN = std::sqrt((double) N) * (double(1) - double(1)/(double(4)*N) + double(1)/(double(21)*N*N));
     eigensysIsUptodate = true;
-    doCheckEigen = false;
+    doCheckEigen = true;
     genOfEigensysUpdate = 0;
 
     double dtest;
@@ -268,9 +268,9 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     xold.set_size(N);
     xBestEver.set_size(N+2);
     xBestEver[N] = std::numeric_limits<double>::max();
-    rgD = new double[N];
-    C = new double*[N];
-    B = new double*[N];
+    rgD.set_size(N);
+    C.set_size(N,N);
+    B.set_size(N,N);
     functionValues = new double[lambda+1];
     functionValues[0] = lambda;
     ++functionValues;
@@ -279,11 +279,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     funcValueHistory[0] = (double) historySize;
     funcValueHistory++;
     
-    for(int i = 0; i < N; ++i)
-    {
-      C[i] = new double[i+1];
-      B[i] = new double[N];
-    }
+
     index = new int[lambda];
     for(int i = 0; i < lambda; ++i)
         index[i] = i;
@@ -298,26 +294,26 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     {
       funcValueHistory[i] = std::numeric_limits<double>::max();
     }
-    for(int i = 0; i < N; ++i)
-      for(int j = 0; j < i; ++j)
-        C[i][j] = B[i][j] = B[j][i] = 0.;
+    B.zeros();
+    B.diag().ones();
+    C.zeros();
 
     for(int i = 0; i < N; ++i)
     {
-      B[i][i] = double(1);
-      C[i][i] = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
-      C[i][i] *= C[i][i];
+  
+      C(i,i) = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
+      C(i,i) *= C(i,i);
       pc[i] = ps[i] = double(0);
     }
-    minEW = minElement(rgD, N);
+    minEW = rgD.min();
     minEW = minEW*minEW;
-    maxEW = maxElement(rgD, N);
+    maxEW = rgD.max();
     maxEW = maxEW*maxEW;
 
-    maxdiagC = C[0][0];
-    for(int i = 1; i < N; ++i) if(maxdiagC < C[i][i]) maxdiagC = C[i][i];
-    mindiagC = C[0][0];
-    for(int i = 1; i < N; ++i) if(mindiagC > C[i][i]) mindiagC = C[i][i];
+    maxdiagC = C(0,0);
+    for(int i = 1; i < N; ++i) if(maxdiagC < C(i,i)) maxdiagC = C(i,i);
+    mindiagC = C(0,0);
+    for(int i = 1; i < N; ++i) if(mindiagC > C(i,i)) mindiagC = C(i,i);
 
       xmean = xold = xstart;
    
@@ -344,9 +340,9 @@ void CMAES::samplePopulation()
       else
       {
         for(int i = 0; i < N; ++i)
-          rgD[i] = std::sqrt(C[i][i]);
-        minEW = square(minElement(rgD, N));
-        maxEW = square(maxElement(rgD, N));
+          rgD[i] = std::sqrt(C(i,i));
+        minEW = square(rgD.min());
+        maxEW = square(rgD.max());
         eigensysIsUptodate = true;
         eigenTimings.start();
       }
@@ -364,7 +360,7 @@ void CMAES::samplePopulation()
         {
           double sum = 0.0;
           for(int j = 0; j < N; ++j)
-            sum += B[i][j]*tempRandom[j];
+            sum += B(i,j)*tempRandom[j];
 
           population(iNk,i) = xmean[i] + sigma*sum;
         }
@@ -441,7 +437,7 @@ for(int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
       {
         sum = 0.;
         for(int j = 0; j < N; ++j)
-          sum += B[j][i]*BDz[j];
+          sum += B(j,i)*BDz[j];
       }
       tempRandom[i] = sum/rgD[i];
     }
@@ -457,9 +453,8 @@ for(int i = (int) *(funcValueHistory - 1) - 1; i > 0; --i)
       else
       {
         sum = double(0);
-        double* Bi = B[i];
         for(int j = 0; j < N; ++j)
-          sum += Bi[j]*tempRandom[j];
+          sum += B(i,j)*tempRandom[j];
       }
       ps[i] = invps*ps[i] + sqrtFactor*sum;
     }
@@ -543,7 +538,7 @@ bool CMAES::testForTermination()
     int cTemp = 0;
     for(int i = 0; i < N; ++i)
     {
-      cTemp += (sigma*std::sqrt(C[i][i]) < stopTolX) ? 1 : 0;
+      cTemp += (sigma*std::sqrt(C(i,i)) < stopTolX) ? 1 : 0;
       cTemp += (sigma*pc[i] < stopTolX) ? 1 : 0;
     }
     if(cTemp == 2*N)
@@ -554,7 +549,7 @@ bool CMAES::testForTermination()
     // TolUpX
     for(int i = 0; i < N; ++i)
     {
-      if(sigma*std::sqrt(C[i][i]) > stopTolUpXFactor*rgInitialStds[i])
+      if(sigma*std::sqrt(C(i,i)) > stopTolUpXFactor*rgInitialStds[i])
       {
         std::cout << "TolUpX: standard deviation increased by more than "
             << stopTolUpXFactor << ", larger initial standard deviation recommended."
@@ -580,7 +575,7 @@ bool CMAES::testForTermination()
         fac = 0.1* sigma* rgD[iAchse];
         for(iKoo = 0; iKoo < N; ++iKoo)
         {
-          if(xmean[iKoo] != xmean[iKoo] + fac* B[iKoo][iAchse])
+          if(xmean[iKoo] != xmean[iKoo] + fac* B(iKoo,iAchse))
             break;
         }
         if(iKoo == N)
@@ -594,10 +589,10 @@ bool CMAES::testForTermination()
     // Component of xmean is not changed anymore
     for(iKoo = 0; iKoo < N; ++iKoo)
     {
-      if(xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt(C[iKoo][iKoo])/double(5))
+      if(xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt(C(iKoo,iKoo))/double(5))
       {
         std::cout << "NoEffectCoordinate: standard deviation 0.2*"
-            << (sigma*std::sqrt(C[iKoo][iKoo])) << " in coordinate " << iKoo
+            << (sigma*std::sqrt(C(iKoo,iKoo))) << " in coordinate " << iKoo
             << " without effect" << std::endl;
          return true;
       }
@@ -651,11 +646,11 @@ void CMAES::updateEigensystem(bool force)
     eigenTimings.toc();
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
-    minEW = minElement(rgD, N);
-    maxEW = maxElement(rgD, N);
+    minEW = rgD.min();
+    maxEW = rgD.max();
 
-    if(doCheckEigen) // needs O(n^3)! writes, in case, error message in error file
-      checkEigen(rgD, B);
+    if(doCheckEigen) 
+     checkEigen(rgD, B);
 
     for(int i = 0; i < N; ++i)
       rgD[i] = std::sqrt(rgD[i]);

@@ -165,11 +165,11 @@ double Optimize(funcType& function, arma::mat& arr);
 
   double chiN;
   //! Lower triangular matrix: i>=j for C[i][j].
-  double** C;
+  arma::mat C;
   //! Matrix with normalize eigenvectors in columns.
-  double** B;
+  arma::mat B;
   //! Axis lengths.
-  double* rgD;
+  arma::vec rgD;
   //! Anisotropic evolution path (for covariance).
   arma::vec pc;
   //! Isotropic evolution path (for step length).
@@ -250,16 +250,15 @@ double minElement(const double* rgd, int len)
    * @param diag (output) N eigenvalues. 
    * @param Q (output) Columns are normalized eigenvectors.
    */
-  void eigen(double* diag, double** Q, double* rgtmp)
+  
+  void eigen(arma::vec& diag, arma::mat& Q, double* rgtmp)
   {
     assert(rgtmp && "eigen(): input parameter rgtmp must be non-NULL");
 
-    if(C != Q) // copy C to Q
-    {
       for(int i = 0; i < N; ++i)
         for(int j = 0; j <= i; ++j)
-          Q[i][j] = Q[j][i] = C[i][j];
-    }
+          Q(i,j) = Q(j,i) = C(i,j);
+    
 
     householder(Q, diag, rgtmp);
     ql(diag, rgtmp, Q);
@@ -270,7 +269,8 @@ double minElement(const double* rgd, int len)
    * operations writes to error file.
    * @return number of detected inaccuracies
    */
-  int checkEigen(double* diag, double** Q)
+  
+  int checkEigen(arma::vec& diag, arma::mat& Q)
   {
     // compute Q diag Q^T and Q Q^T to check
     int res = 0;
@@ -279,12 +279,12 @@ double minElement(const double* rgd, int len)
         double cc = 0., dd = 0.;
         for(int k = 0; k < N; ++k)
         {
-          cc += diag[k]*Q[i][k]*Q[j][k];
-          dd += Q[i][k]*Q[j][k];
+          cc += diag[k]*Q(i,k)*Q(j,k);
+          dd += Q(i,k)*Q(j,k);
         }
         // check here, is the normalization the right one?
-        const bool cond1 = fabs(cc - C[i > j ? i : j][i > j ? j : i]) / sqrt(C[i][i]* C[j][j]) > double(1e-10);
-        const bool cond2 = fabs(cc - C[i > j ? i : j][i > j ? j : i]) > double(3e-14);
+        const bool cond1 = fabs(cc - C(i > j ? i : j,i > j ? j : i)) / sqrt(C(i,i)* C(j,j)) > double(1e-10);
+        const bool cond2 = fabs(cc - C(i > j ? i : j,i > j ? j : i)) > double(3e-14);
         if(cond1 && cond2)
         {
           
@@ -312,7 +312,7 @@ double minElement(const double* rgd, int len)
    * @param V input: matrix output of Householder. output: basis of
    *          eigenvectors, according to d
    */
-  void ql(double* d, double* e, double** V)
+  void ql(arma::vec& d, double* e, arma::mat& V)
   {
    
     double f(0);
@@ -387,9 +387,9 @@ double minElement(const double* rgd, int len)
             // accumulate transformation.
             for(int k = 0; k < N; k++)
             {
-              double& Vki1 = V[k][i+1];
+              double& Vki1 = V(k,i+1);
               h = Vki1;
-              double& Vki = V[k][i];
+              double& Vki = V(k,i);
               Vki1 = s*Vki + c*h;
               Vki *= c; Vki -= s*h;
             }
@@ -412,12 +412,13 @@ double minElement(const double* rgd, int len)
    * @param d output: diagonal
    * @param e output: [0..n-1], off diagonal (elements 1..n-1)
    */
-  void householder(double** V, double* d, double* e)
+
+  void householder(arma::mat& V, arma::vec& d, double* e)
   {
 
     for(int j = 0; j < N; j++)
     {
-      d[j] = V[N - 1][j];
+      d[j] = V(N-1,j);
     }
 
     // Householder reduction to tridiagonal form
@@ -427,27 +428,27 @@ double minElement(const double* rgd, int len)
       // scale to avoid under/overflow
       double scale = 0.0;
       double h = 0.0;
-      for(double *pd = d, *const dend = d+i; pd != dend; pd++)
+      for(int z=0; z<i; z++)
       {
-        scale += std::fabs(*pd);
+        scale += std::fabs(d[z]);
       }
       if(scale == 0.0)
       {
         e[i] = d[i-1];
         for(int j = 0; j < i; j++)
         {
-          d[j] = V[i-1][j];
-          V[i][j] = 0.0;
-          V[j][i] = 0.0;
+          d[j] = V(i-1,j);
+          V(i,j)= 0.0;
+          V(j,i) = 0.0;
         }
       }
       else
       {
         // generate Householder vector
-        for(double *pd = d, *const dend = d+i; pd != dend; pd++)
+        for(int z=0; z<i; z++)
         {
-          *pd /= scale;
-          h += *pd * *pd;
+          d[z] /= scale;
+          h += d[z] * d[z];
         }
         double& dim1 = d[i-1];
         double f = dim1;
@@ -461,12 +462,12 @@ double minElement(const double* rgd, int len)
         for(int j = 0; j < i; j++)
         {
           f = d[j];
-          V[j][i] = f;
+          V(j,i) = f;
           double& ej = e[j];
-          g = ej + V[j][j]* f;
+          g = ej + V(j,j)* f;
           for(int k = j + 1; k <= i - 1; k++)
           {
-            double& Vkj = V[k][j];
+            double& Vkj = V(k,j);
             g += Vkj*d[k];
             e[k] += Vkj*f;
           }
@@ -491,10 +492,10 @@ double minElement(const double* rgd, int len)
           g = e[j];
           for(int k = j; k <= i - 1; k++)
           {
-            V[k][j] -= f*e[k] + g*d[k];
+            V(k,j) -= f*e[k] + g*d[k];
           }
-          dj = V[i-1][j];
-          V[i][j] = 0.0;
+          dj = V(i-1,j);
+          V(i,j) = 0.0;
         }
       }
       d[i] = h;
@@ -505,43 +506,44 @@ double minElement(const double* rgd, int len)
     for(int i = 0; i < nm1; i++)
     {
       double h;
-      double& Vii = V[i][i];
-      V[N-1][i] = Vii;
+      double& Vii = V(i,i);
+      V(N-1,i) = Vii;
       Vii = 1.0;
       h = d[i+1];
       if(h != 0.0)
       {
         for(int k = 0; k <= i; k++)
         {
-          d[k] = V[k][i+1] / h;
+          d[k] = V(k,i+1) / h;
         }
         for(int j = 0; j <= i; j++) {
           double g = 0.0;
           for(int k = 0; k <= i; k++)
           {
-            double* Vk = V[k];
-            g += Vk[i+1]* Vk[j];
+           
+            g += V(k,i+1)* V(k,j);
           }
           for(int k = 0; k <= i; k++)
           {
-            V[k][j] -= g*d[k];
+            V(k,j) -= g*d[k];
           }
         }
       }
       for(int k = 0; k <= i; k++)
       {
-        V[k][i+1] = 0.0;
+        V(k,i+1) = 0.0;
       }
     }
     for(int j = 0; j < N; j++)
     {
-      double& Vnm1j = V[N-1][j];
+      double& Vnm1j = V(N-1,j);
       d[j] = Vnm1j;
       Vnm1j = 0.0;
     }
-    V[N-1][N-1] = 1.0;
+    V(N-1,N-1) = 1.0;
     e[0] = 0.0;
   }
+  
 
   double myhypot(double a, double b)
 {

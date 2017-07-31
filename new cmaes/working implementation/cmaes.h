@@ -1696,7 +1696,7 @@ public:
     minEW = minElement(rgD, params.N);
     maxEW = maxElement(rgD, params.N);
 
-    if(doCheckEigen) // needs O(n^3)! writes, in case, error message in error file
+    if(doCheckEigen)
       checkEigen(rgD, B);
 
     for(int i = 0; i < params.N; ++i)

@@ -10,6 +10,9 @@
  * http://www.opensource.org/licenses/BSD-3-Clause for more information.
  */
 #include <mlpack/core.hpp>
+
+#include <mlpack/core/optimizers/lbfgs/test_functions.hpp>
+#include <mlpack/core/optimizers/sgd/test_function.hpp>
 #include <math.h>
 
 #include "cmaes.hpp"
@@ -18,13 +21,17 @@ using namespace std;
 using namespace arma;
 using namespace mlpack;
 using namespace mlpack::optimization;
+using namespace mlpack::optimization::test;
 
 
   class rosenbrock
   {
     public:
-    
-    double NumFunctions(){return 49;}
+    int N;
+
+    rosenbrock(int x){ N = x-1; }
+
+    double NumFunctions(){return N;}
 
     double Evaluate(arma::mat& x, int i)
     {
@@ -33,52 +40,31 @@ using namespace mlpack::optimization;
 
   };
 
-    class simpleFunction
-  {
-    public:
-    
-    double NumFunctions(){return 3;}
 
-   double Evaluate(arma::mat& coordinates, int i)
-    const
-    {
-      switch (i)
-      {
-        case 0:
-          return -std::exp(-std::abs(coordinates[0]));
-
-        case 1:
-          return std::pow(coordinates[1], 2);
-
-        case 2:
-          return std::pow(coordinates[2], 4) + 3 * std::pow(coordinates[2], 2);
-
-        default:
-          return 0;
-      }
-    }
-
-  };
 
 int main()
 { 
 mlpack::math::RandomSeed(std::time(NULL));
   
-  rosenbrock test;
+  for(int i=10; i<55; i += 5)
+  {
+    rosenbrock test(i);
 
-  CMAES s(50,0.5, 0.3, 100000, 1e-13);
+    CMAES s(i,0.5, 0.3, 100000, 1e-16);
 
-//  arma::mat coordinates(N,1);
-  arma::vec coordinates(50);
-  double result = s.Optimize(test, coordinates);
+  //  arma::mat coordinates(N,1);
+    arma::vec coordinates(i);
+    double result = s.Optimize(test, coordinates);
 
-  cout << endl << result << endl;
-for(int i=0; i<50; i++) std::cout << coordinates[i] << " ";
-std::cout << std::endl;
+    cout << endl << result << endl;
+    for(int j=0; j<i; j++) std::cout << coordinates[j] << " ";
+    std::cout << std::endl;
+  }
 
-  simpleFunction testing;
 
-  CMAES fun(3, 0.5, 0.3, 100000, 1e-13);
+  SGDTestFunction testing;
+
+  CMAES fun(3, 0.5, 0.3, 100000, 1e-16);
 
 //  arma::mat coordinates(N,1);
   arma::vec coordinates1(3);
@@ -87,6 +73,25 @@ std::cout << std::endl;
   cout << endl << result1 << endl;
   for(int i=0; i<3; i++) std::cout << coordinates1[i] << " ";
   std::cout << std::endl;
+
+/*
+// Loop over several variants.
+  for (size_t i = 10; i < 50; i += 5)
+  {
+    // Create the generalized Rosenbrock function.
+    GeneralizedRosenbrockFunction f(i);
+
+    CMAES t(3, 0.5, 0.3, 100000, 1e-16);
+
+    arma::mat coordinates2 = f.GetInitialPoint();
+    double result2 = t.Optimize(f, coordinates2);
+
+   cout << endl << result2 << endl;
+    for (size_t j = 0; j < i; ++j)
+     std::cout << coordinates2[j] << " ";
+     std::cout << std::endl;
+  }
+*/
 
 return 0;
 }
