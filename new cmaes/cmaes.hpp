@@ -13,7 +13,7 @@
 #ifndef MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_HPP
 
-#include "timings.hpp"
+#include <ctime>
 
 namespace mlpack {
 namespace optimization {
@@ -80,7 +80,6 @@ double Optimize(funcType& function, arma::mat& arr);
   //! Problem dimension, must stay constant.
   arma::vec arFunvals;
   double countevals;
-  Timing eigenTimings;
 
   int N;
   //! Initial search space vector.
@@ -104,6 +103,19 @@ double Optimize(funcType& function, arma::mat& arr);
   double stopTolX;
   //! Defines the maximal condition number.
   double stopTolUpXFactor;
+  
+  clock_t lastclock = clock();
+  time_t lasttime = time(NULL);
+  clock_t ticclock;
+  time_t tictime;
+  short istic = 0;
+  short isstarted = 1;
+  double lastdiff = 0;
+  double tictoczwischensumme = 0;
+  double totaltime = 0; 
+  double totaltotaltime = 0;
+  double tictoctime = 0;
+  double lasttictoctime = 0;
 
   /* internal evolution strategy parameters */
   /**
@@ -213,6 +225,9 @@ bool testForTermination();
  void ql(arma::vec& d, arma::vec& e, arma::mat& V);
  void householder(arma::mat& V, arma::vec& d, arma::vec& e);
  double myhypot(double a, double b);
+ void tic();
+ double toc();
+ double update();
 
 };
 } // namespace optimization

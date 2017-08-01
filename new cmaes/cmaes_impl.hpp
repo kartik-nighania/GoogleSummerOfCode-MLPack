@@ -14,7 +14,6 @@
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 
 #include "cmaes.hpp"
-#include "timings.hpp"
 #include <mlpack/core/math/random.hpp>
 
 namespace mlpack {
@@ -334,7 +333,15 @@ void CMAES::samplePopulation()
         maxEW = rgD.max();
         maxEW *= maxEW;
         eigensysIsUptodate = true;
-        eigenTimings.start();
+        totaltime = 0;
+        tictoctime = 0;
+        lasttictoctime = 0;
+        istic = 0;
+        lastclock = clock();
+        lasttime = time(NULL);
+        lastdiff = 0;
+        tictoczwischensumme = 0;
+        isstarted = 1;;
       }
     }
 
@@ -611,7 +618,7 @@ bool CMAES::testForTermination()
 
 void CMAES::updateEigensystem(bool force)
   {
-    eigenTimings.update();
+    update();
 
     if(!force)
     {
@@ -622,24 +629,25 @@ void CMAES::updateEigensystem(bool force)
         return;
       // return on time percentage
       if(updateCmode.maxtime < 1.00
-          && eigenTimings.tictoctime > updateCmode.maxtime* eigenTimings.totaltime
-          && eigenTimings.tictoctime > 0.0002)
+          && tictoctime > updateCmode.maxtime* totaltime
+          && tictoctime > 0.0002)
         {
           Log::Info << " time return happened " << std::endl;
         return;
       }
     }
 
-    eigenTimings.tic();
+    tic();
     eigen(rgD, B, tempRandom);
-    eigenTimings.toc();
+    toc();
 
     // find largest and smallest eigenvalue, they are supposed to be sorted anyway
     minEW = rgD.min();
     maxEW = rgD.max();
 
-    if(doCheckEigen) 
-     checkEigen(rgD, B);
+   
+   if(doCheckEigen) 
+    checkEigen(rgD, B);
 
     for(int i = 0; i < N; ++i)
       rgD[i] = std::sqrt(rgD[i]);
@@ -961,6 +969,49 @@ void CMAES::updateEigensystem(bool force)
     return double(0);
 }
 
+  double CMAES::update()
+  {
+    double diffc, difft;
+    clock_t lc = lastclock; // measure CPU in 1e-6s
+    time_t lt = lasttime; // measure time in s
+
+    assert(isstarted == 1 && "timings_started() must be called before using timings... functions");
+
+    lastclock = clock(); // measures at most 2147 seconds, where 1s = 1e6 CLOCKS_PER_SEC
+    lasttime = time(NULL);
+    diffc = (double) (lastclock - lc) / CLOCKS_PER_SEC; // is presumably in [-21??, 21??]
+    difft = difftime(lasttime, lt); // is presumably an integer
+    lastdiff = difft; // on the "save" side
+    // use diffc clock measurement if appropriate
+    if(diffc > 0 && difft < 1000)
+      lastdiff = diffc;
+    assert(lastdiff >= 0 && "BUG in time measurement");
+    totaltime += lastdiff;
+    totaltotaltime += lastdiff;
+    if(istic)
+    {
+      tictoczwischensumme += lastdiff;
+      tictoctime += lastdiff;
+    }
+    return lastdiff;
+  }
+
+  void CMAES::tic()
+  {
+    assert(!istic && "Timingic called twice without toc");
+    update();
+    istic = 1;
+  }
+
+  double CMAES::toc()
+  {
+    assert(istic && "Timingoc called without tic");
+    update();
+    lasttictoctime = tictoczwischensumme;
+    tictoczwischensumme = 0;
+    istic = 0;
+    return lasttictoctime;
+  }
 
 } // namespace optimization
 } // namespace mlpack
