@@ -50,7 +50,7 @@ mlpack::math::RandomSeed(std::time(NULL));
   {
     rosenbrock test(i);
 
-    CMAES s(i,0.5, 0.3, 100000, 1e-16);
+    CMAES s(i,0.5, 0.3, 100000, 1e-16, 1e-15);
 
   //  arma::mat coordinates(N,1);
     arma::vec coordinates(i);
@@ -64,7 +64,7 @@ mlpack::math::RandomSeed(std::time(NULL));
 
   SGDTestFunction testing;
 
-  CMAES fun(3, 0.5, 0.3, 100000, 1e-16);
+  CMAES fun(3, 0.5, 0.3, 100000, 1e-16, 1e-15);
 
 //  arma::mat coordinates(N,1);
   arma::vec coordinates1(3);

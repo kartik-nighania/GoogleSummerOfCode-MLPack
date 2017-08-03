@@ -14,21 +14,20 @@
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 
 #include "cmaes.hpp"
-#include <mlpack/core/math/random.hpp>
 
 namespace mlpack {
 namespace optimization {
 
 CMAES::CMAES(int objectDim,
 double start, double stdDivs,
-double iters, double evalEnd)
+double iters, double evalEnd, double functionHistory)
       :
         N(-1),
         stopMaxFunEvals(-1),
         facmaxeval(1.0),
         stopMaxIter(-1.0),
         stopTolFun(1e-12),
-        stopTolFunHist(1e-14),
+        stopTolFunHist(1e-13),
         stopTolX(0),
         stopTolUpXFactor(1e3),
         lambda(-1),
@@ -50,28 +49,28 @@ double iters, double evalEnd)
     if ( N <= 0)
     throw std::runtime_error("Problem dimension N undefined.");
     
-    if(evalEnd != 0) stopTolFun = evalEnd;
-
-    if(start == 0)
+    if (evalEnd != 0) stopTolFun = evalEnd;
+    if (functionHistory != 0) stopTolFunHist = functionHistory;
+    
+    if (start == 0)
     { Log::Warn << " WARNING: initial start point undefined." <<
-   "Please specify if incorrect results detected."
-   << "DEFAULT = 0.5...0.5." << std::endl;
-     start = 0.5; }
+     "Please specify if incorrect results detected."
+     << "DEFAULT = 0.5...0.5." << std::endl;
+     start = 0.5;
+    }
     
     if (stdDivs == 0)
     {
-Log::Warn << "WARNING: initialStandardDeviations undefined."
-<< " Please specify if incorrect results detected. DEFAULT = 0.3...0.3."
-<< std::endl;
-   stdDivs = 0.3;}
+     Log::Warn << "WARNING: initialStandardDeviations undefined."
+     << " Please specify if incorrect results detected. DEFAULT = 0.3...0.3."
+     << std::endl;
+     stdDivs = 0.3;
+    }
 
-    xstart.set_size(N); 
+    xstart.set_size(N);
+    xstart.fill(start);
     rgInitialStds.set_size(N);
-
-          xstart.fill(start);
-
-        for(int i = 0; i < N; ++i)
-          rgInitialStds[i] = stdDivs;
+    rgInitialStds.fill(stdDivs);
 
     diagonalCov = 0;
 
@@ -80,23 +79,15 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     if (mu <= 0)
       mu = lambda / 2;
 
-        weights.set_size(mu);
-      for (int i = 0; i < mu; ++i) weights[i] = log(mu + 1.) - log(i + 1.);
-
+    weights.set_size(mu);
+    for (int i = 0; i < mu; ++i) weights[i] = log(mu + 1.) - log(i + 1.);
 
       // normalize weights vector and set mueff
-    double s1 = 0, s2 = 0;
-    for(int i = 0; i < mu; ++i)
-    {
-      s1 += weights[i];
-      s2 += weights[i]*weights[i];
-    }
-    mueff = s1*s1/s2;
-    for(int i = 0; i < mu; ++i)
-      weights[i] /= s1;
+      double s1 = arma::accu(weights);
+      double s2 = arma::accu(weights % weights);
 
-    if(mu < 1 || mu > lambda || (mu == lambda && weights[0] == weights[mu - 1]))
-      throw std::runtime_error("setWeights(): invalid setting of mu or lambda");
+      mueff = s1*s1/s2;
+      weights /= s1;
 
     if (cs > 0)
       cs *= (mueff + 2.) / (N + mueff + 3.);
@@ -185,46 +176,48 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     return funs;
   }
 
-  void CMAES::adaptC2(const int hsig)
+   void CMAES::adaptC2(const int hsig)
   {
-
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
-    if(ccov != double(0))
+    if (ccov != double(0))
     {
       // definitions for speeding up inner-most loop
       const double mucovinv = double(1)/mucov;
-      const double commonFactor = ccov * (diag ? (N + double(1.5)) / double(3) : double(1));
-      const double ccov1 = std::min(commonFactor*mucovinv, double(1));
-      const double ccovmu = std::min(commonFactor*(double(1)-mucovinv), double(1)-ccov1);
+
+      const double commonFactor = ccov *
+      (diag ? (N + double(1.5)) / double(3) : double(1));
+
+      const double ccov1 = std::min(commonFactor*
+        mucovinv, double(1));
+
+      const double ccovmu = std::min(commonFactor*
+        (double(1)-mucovinv), double(1)-ccov1);
+
       const double sigmasquare = sigma*sigma;
+
       const double onemccov1ccovmu = double(1)-ccov1-ccovmu;
-      const double longFactor = (double(1)-hsig)*ccumcov*(double(2)-ccumcov);
+
+      const double longFactor = (double(1)-hsig)*
+      ccumcov*(double(2)-ccumcov);
 
       eigensysIsUptodate = false;
 
       // update covariance matrix
-      for(int i = 0; i < N; ++i)
-        for(int j = diag ? i : 0; j <= i; ++j)
+      for (int i = 0; i < N; ++i)
+        for (int j = diag ? i : 0; j <= i; ++j)
         {
-          double& Cij = C(i,j);
+          double& Cij = C(i, j);
           Cij = onemccov1ccovmu*Cij + ccov1 * (pc[i]*pc[j] + longFactor*Cij);
-          for(int k = 0; k < mu; ++k)
+          for (int k = 0; k < mu; ++k)
           { // additional rank mu update
-            Cij += ccovmu*weights[k] * (population(index[k],i) - xold[i])
-                * (population(index[k],j) - xold[j]) / sigmasquare;
+            Cij += ccovmu*weights[k] * (population(index[k] , i) - xold[i])
+                * (population(index[k] , j) - xold[j]) / sigmasquare;
           }
         }
       // update maximal and minimal diagonal value
-      maxdiagC = mindiagC = C(0,0);
-      for(int i = 1; i < N; ++i)
-      {
-        const double& Cii = C(i,i);
-        if(maxdiagC < Cii)
-          maxdiagC = Cii;
-        else if(mindiagC > Cii)
-          mindiagC = Cii;
-      }
+      maxdiagC = arma::max(C.diag());
+      mindiagC = arma::min(C.diag());
     }
   }
 
@@ -237,22 +230,19 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
 
   void CMAES::init()
   {
-    
-    double trace(0);
-    for(int i = 0; i < N; ++i)
-      trace += rgInitialStds[i]*rgInitialStds[i];
+    double trace = arma::accu(arma::pow(rgInitialStds, 2));
     sigma = std::sqrt(trace/N);
 
-    chiN = std::sqrt((double) N) * (double(1) - double(1)/(double(4)*N) + double(1)/(double(21)*N*N));
+    chiN = std::sqrt((double) N) * (1 - 1/(4*N) + 1/(21*N*N));
     eigensysIsUptodate = true;
-    doCheckEigen = true;
     genOfEigensysUpdate = 0;
 
     double dtest;
-    for(dtest = double(1); dtest && dtest < double(1.1)*dtest; dtest *= double(2))
-      if(dtest == dtest + double(1))
+    for (dtest = double(1); dtest && dtest < double(1.1)*dtest;
+    dtest *= double(2))
+      if (dtest == dtest + double(1))
         break;
-    dMaxSignifKond = dtest / double(1000); // not sure whether this is really save, 100 does not work well enough
+    dMaxSignifKond = dtest / double(1000);
 
     gen = 0;
     countevals = 0;
@@ -260,7 +250,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     dLastMinEWgroesserNull = double(1);
     pc.set_size(N);
     ps.set_size(N);
-    tempRandom.set_size(N+1);
+    tempRandom.set_size(N);
     BDz.set_size(N);
     xmean.set_size(N);
     xold.set_size(N);
@@ -272,37 +262,31 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     functionValues.set_size(lambda);
     historySize = 10 + (int) ceil(3.*10.*N/lambda);
     funcValueHistory.set_size(historySize);
-
     index.set_size(lambda);
     for(int i = 0; i < lambda; ++i) index[i] = i;
     population.set_size(lambda,N+1);
-
     functionValues.fill(std::numeric_limits<double>::max());
-  
     funcValueHistory.fill(std::numeric_limits<double>::max());
-
     B.zeros();
     B.diag().ones();
     C.zeros();
 
-    for(int i = 0; i < N; ++i)
-    {
-  
-      C(i,i) = rgD[i] = rgInitialStds[i]*std::sqrt(N/trace);
-      C(i,i) *= C(i,i);
-      pc[i] = ps[i] = double(0);
-    }
+
+    rgD = rgInitialStds * std::sqrt(N / trace);
+    C.diag() = rgD;
+    arma::pow(C.diag(), 2);
+    pc.zeros();
+    ps.zeros();
+
     minEW = rgD.min();
     minEW = minEW*minEW;
     maxEW = rgD.max();
     maxEW = maxEW*maxEW;
 
-    maxdiagC = C(0,0);
-    for(int i = 1; i < N; ++i) if(maxdiagC < C(i,i)) maxdiagC = C(i,i);
-    mindiagC = C(0,0);
-    for(int i = 1; i < N; ++i) if(mindiagC > C(i,i)) mindiagC = C(i,i);
+    maxdiagC = arma::max(C.diag());
+    mindiagC = arma::min(C.diag());
 
-      xmean = xold = xstart;
+    xmean = xold = xstart;
    
       for(int i = 0; i < N; ++i)
         xmean[i] += sigma*rgD[i]*mlpack::math::RandNormal();
@@ -326,8 +310,7 @@ void CMAES::samplePopulation()
         updateEigensystem(false);
       else
       {
-        for(int i = 0; i < N; ++i)
-          rgD[i] = std::sqrt(C(i,i));
+        rgD = arma::sqrt(C.diag());
         minEW = rgD.min();
         minEW *= minEW;
         maxEW = rgD.max();
@@ -345,50 +328,50 @@ void CMAES::samplePopulation()
       }
     }
 
-  for(int iNk = 0; iNk < lambda; ++iNk)
+      for (int iNk = 0; iNk < lambda; ++iNk)
     { // generate scaled random vector D*z
-      for(int i = 0; i < N; ++i)
-        if(diag)
-          population(iNk,i) = xmean[i] + sigma*rgD[i]*mlpack::math::RandNormal();
+      for (int i = 0; i < N; ++i)
+        if (diag)
+          population(iNk, i) = xmean[i] + sigma*rgD[i]
+          * mlpack::math::RandNormal();
         else
-          tempRandom[i] = rgD[i]*mlpack::math::RandNormal();
-      if(!diag)
-        for(int i = 0; i < N; ++i) // add mutation sigma*B*(D*z)
+          tempRandom[i] = rgD[i]* mlpack::math::RandNormal();
+      if (!diag)
+      {
+        for (int i = 0; i < N; ++i)
+      { // add mutation sigma*B*(D*z)
+        double sum = 0.0;
         {
-          double sum = 0.0;
-          for(int j = 0; j < N; ++j)
-            sum += B(i,j)*tempRandom[j];
-
-          population(iNk,i) = xmean[i] + sigma*sum;
+          sum = arma::dot(B.row(i), tempRandom);
+          population(iNk , i) = xmean[i] + sigma*sum;
         }
+      }
+    }
     }
 
-    if(state == UPDATED || gen == 0)
+    if (state == UPDATED || gen == 0)
       ++gen;
     state = SAMPLED;
-
   }
 
-  /** Core procedure of the CMA-ES algorithm. Sets a new mean
-  value and estimates
+/** 
+* Core procedure of the CMA-ES algorithm. Sets a new mean
+* value and estimates
 * the new covariance matrix and a new step sizefor the normal search
-  distribution.
+* distribution.
 * @param fitnessValues An array of \f$\lambda\f$ function values.
-* @return Mean value of the new distribution. */
-
+* @return Mean value of the new distribution. 
+*/
 void CMAES::updateDistribution(arma::vec& fitnessValues)
 {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
-    assert(state != UPDATED && "updateDistribution(): You need to call "
-          "samplePopulation() before update can take place.");
 
     if (state == SAMPLED) // function values are delivered here
       countevals += lambda;
     else Log::Warn <<  "updateDistribution(): unexpected state" << std::endl;
 
     // assign function values
-    for(int i = 0; i < lambda; ++i)
-      population(i,N) = functionValues[i] = fitnessValues[i];
+     population.col(N) = functionValues = fitnessValues;
 
     // Generate index
      index = arma::sort_index(fitnessValues);
@@ -397,7 +380,7 @@ void CMAES::updateDistribution(arma::vec& fitnessValues)
     {
       sigma *= std::exp(double(0.2) + cs / damps);
 
-      std::cout << "Warning: sigma increased due to equal function values"
+      Log::Warn << "Warning: sigma increased due to equal function values"
       << std::endl << "Reconsider the formulation of the objective function";
     }
 
@@ -456,20 +439,16 @@ for(int i = (int)historySize - 1; i > 0; --i)
       ps[i] = invps*ps[i] + sqrtFactor*sum;
     }
 
-    // calculate norm(ps)^2
-    double psxps(0);
-    for(int i = 0; i < N; ++i)
-    {
-      const double& rgpsi = ps[i];
-      psxps += rgpsi*rgpsi;
-    }
+   // calculate norm(ps)^2
+    double psxps = std::pow(arma::norm(ps), 2);
 
     // cumulation for covariance matrix (pc) using B*D*z~N(0,C)
-    int hsig = std::sqrt(psxps) / std::sqrt(double(1) - std::pow(double(1) - cs, double(2)* gen))
+    int hsig = std::sqrt(psxps) / std::sqrt(double(1)
+    - std::pow(double(1) - cs, double(2)* gen))
         / chiN < double(1.4) + double(2) / (N + 1);
-    const double ccumcovinv = 1.- ccumcov;
+    const double ccumcovinv = 1.-ccumcov;
     const double hsigFactor = hsig*std::sqrt(ccumcov*(double(2)-ccumcov));
-    for(int i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       pc[i] = ccumcovinv*pc[i] + hsigFactor*BDz[i];
 
     // update of C
@@ -489,21 +468,21 @@ for(int i = (int)historySize - 1; i > 0; --i)
    * that contains the matched stop criteria via getStopMessage().
    * @return Does any stop criterion match?
    */
-
 bool CMAES::testForTermination()
   {
-     double range, fac;
+    double range, fac;
     int iAchse, iKoo;
     int diag = diagonalCov == 1 || diagonalCov >= gen;
 
     // function value reached
-    if((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
-        functionValues[index[0]] <= stStopFitness.val)
+    if ((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
+        functionValues[(int)index[0]] <= stStopFitness.val)
     {
-      std::cout << "Fitness: function value " << functionValues[index[0]]
+      Log::Info << "Fitness: function value " << functionValues[(int)index[0]]
           << " <= stopFitness (" << stStopFitness.val << ")" << std::endl;
-          return true;
+      return true;
     }
+
     // TolFun
     int rangeIndex = (int) std::min((int)gen, historySize-1);
     range = std::max( arma::max(funcValueHistory.subvec(0, rangeIndex)) ,
@@ -511,101 +490,111 @@ bool CMAES::testForTermination()
         std::min(arma::min(funcValueHistory.subvec(0, rangeIndex)),
         functionValues.min());
 
-    if(gen > 0 && range <= stopTolFun)
+    if (gen > 0 && range <= stopTolFun)
     {
-      std::cout << "TolFun: function value differences " << range
+       Log::Info << "TolFun: function value differences " << range
           << " < stopTolFun=" << stopTolFun << std::endl;
-           return true;
+       return true;
     }
 
     // TolFunHist
-    if(gen > historySize)
+    if (gen > historySize)
     {
-      range = funcValueHistory.max() - funcValueHistory.min();
-      if(range <= stopTolFunHist)
+      range = arma::max(funcValueHistory) - arma::min(funcValueHistory);
+      if (range <= stopTolFunHist)
       {
-        std::cout << "TolFunHist: history of function value changes " << range
+         Log::Info << "TolFunHist: history of function value changes " << range
             << " stopTolFunHist=" << stopTolFunHist << std::endl;
-       return true;
-      }
-    }
-
-    // TolX
-    int cTemp = 0;
-    for(int i = 0; i < N; ++i)
-    {
-      cTemp += (sigma*std::sqrt(C(i,i)) < stopTolX) ? 1 : 0;
-      cTemp += (sigma*pc[i] < stopTolX) ? 1 : 0;
-    }
-    if(cTemp == 2*N)
-    {
-      std::cout << "TolX: object variable changes below " << stopTolX << std::endl;
-    }
-
-    // TolUpX
-    for(int i = 0; i < N; ++i)
-    {
-      if(sigma*std::sqrt(C(i,i)) > stopTolUpXFactor*rgInitialStds[i])
-      {
-        std::cout << "TolUpX: standard deviation increased by more than "
-            << stopTolUpXFactor << ", larger initial standard deviation recommended."
-            << std::endl;
-             return true;
-      }
-    }
-
-    // Condition of C greater than dMaxSignifKond
-    if(maxEW >= minEW* dMaxSignifKond)
-    {
-      std::cout << "ConditionNumber: maximal condition number " << dMaxSignifKond
-          << " reached. maxEW=" << maxEW <<  ",minEW=" << minEW << ",maxdiagC="
-          << maxdiagC << ",mindiagC=" << mindiagC << std::endl;
-           return true;
-    }
-
-    // Principal axis i has no effect on xmean, ie. x == x + 0.1* sigma* rgD[i]* B[i]
-    if(!diag)
-    {
-      for(iAchse = 0; iAchse < N; ++iAchse)
-      {
-        fac = 0.1* sigma* rgD[iAchse];
-        for(iKoo = 0; iKoo < N; ++iKoo)
-        {
-          if(xmean[iKoo] != xmean[iKoo] + fac* B(iKoo,iAchse))
-            break;
-        }
-        if(iKoo == N)
-        {
-          std::cout << "NoEffectAxis: standard deviation 0.1*" << (fac / 0.1)
-              << " in principal axis " << iAchse << " without effect" << std::endl;
-           return true;
-        }
-      }
-    }
-    // Component of xmean is not changed anymore
-    for(iKoo = 0; iKoo < N; ++iKoo)
-    {
-      if(xmean[iKoo] == xmean[iKoo] + sigma*std::sqrt(C(iKoo,iKoo))/double(5))
-      {
-        std::cout << "NoEffectCoordinate: standard deviation 0.2*"
-            << (sigma*std::sqrt(C(iKoo,iKoo))) << " in coordinate " << iKoo
-            << " without effect" << std::endl;
          return true;
       }
     }
 
-    if(countevals >= stopMaxFunEvals)
+    // TolX
+    arma::uvec x = arma::find((sigma*arma::sqrt(C.diag())) < stopTolX);
+    arma::uvec y = arma::find(sigma*pc < stopTolX);
+    int cTemp = x.n_rows + y.n_rows;
+
+    if (cTemp == 2*N)
     {
-      std::cout << "MaxFunEvals: conducted function evaluations " << countevals
-          << " >= " << stopMaxFunEvals << std::endl;  return true;
-    }
-    if(gen >= stopMaxIter)
-    {
-      std::cout << "MaxIter: number of iterations " << gen << " >= "
-          << stopMaxIter << std::endl; return true;
+       Log::Info << "TolX: object variable changes below "
+       << stopTolX << std::endl;
+       return true;
     }
 
-   return false;
+    // TolUpX
+    for (int i = 0; i < N; ++i)
+    {
+      if (sigma*std::sqrt(C(i, i)) > stopTolUpXFactor*rgInitialStds[i])
+      {
+         Log::Info << "TolUpX: standard deviation increased by more than "
+            << stopTolUpXFactor << ", larger initial standard"
+            << "deviation recommended."
+            << std::endl;
+            return true;
+        break;
+      }
+    }
+
+    // Condition of C greater than dMaxSignifKond
+    if (maxEW >= minEW* dMaxSignifKond)
+    {
+       Log::Info << "ConditionNumber: maximal condition number " <<
+       dMaxSignifKond << " reached. maxEW=" << maxEW <<  ",minEW="
+       << minEW << ",maxdiagC=" << maxdiagC << ",mindiagC="
+       << mindiagC << std::endl;
+        return true;
+    }
+
+    // Principal axis i has no effect on xmean
+    // ie. x == x + 0.1* sigma* rgD[i]* B[i]
+    if (!diag)
+    {
+      for (iAchse = 0; iAchse < N; ++iAchse)
+      {
+        fac = 0.1* sigma* rgD[iAchse];
+        for (iKoo = 0; iKoo < N; ++iKoo)
+        {
+          if (xmean[iKoo] != xmean[iKoo] + fac* B(iKoo, iAchse))
+            break;
+        }
+        if (iKoo == N)
+        {
+           Log::Info << "NoEffectAxis: standard deviation 0.1*" << (fac / 0.1)
+           << " in principal axis " << iAchse << " without effect"
+           << std::endl;
+           return true;
+          break;
+        }
+      }
+    }
+    // Component of xmean is not changed anymore
+    for (iKoo = 0; iKoo < N; ++iKoo)
+    {
+      if (xmean[iKoo] == xmean[iKoo] + sigma*
+        std::sqrt(C(iKoo, iKoo))/double(5))
+      {
+         Log::Info << "NoEffectCoordinate: standard deviation 0.2*"
+            << (sigma*std::sqrt(C(iKoo , iKoo))) << " in coordinate " << iKoo
+            << " without effect" << std::endl;
+        return true;
+        break;
+      }
+    }
+
+    if (countevals >= stopMaxFunEvals)
+    {
+       Log::Info << "MaxFunEvals: conducted function evaluations " << countevals
+          << " >= " << stopMaxFunEvals << std::endl;
+       return true;
+    }
+    if (gen >= stopMaxIter)
+    {
+       Log::Info << "MaxIter: number of iterations " << gen << " >= "
+          << stopMaxIter << std::endl;
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -615,7 +604,6 @@ bool CMAES::testForTermination()
    * @param force For force == true the eigendecomposion is conducted even if
    *              eigenvector and values seem to be up to date.
    */
-
 void CMAES::updateEigensystem(bool force)
   {
     update();
@@ -645,12 +633,7 @@ void CMAES::updateEigensystem(bool force)
     minEW = rgD.min();
     maxEW = rgD.max();
 
-   
-   if(doCheckEigen) 
-    checkEigen(rgD, B);
-
-    for(int i = 0; i < N; ++i)
-      rgD[i] = std::sqrt(rgD[i]);
+     rgD = arma::sqrt(rgD);
 
     eigensysIsUptodate = true;
     genOfEigensysUpdate = gen;
@@ -674,45 +657,6 @@ void CMAES::updateEigensystem(bool force)
     ql(diag, rgtmp, Q);
   }
 
-  /** 
-   * Exhaustive test of the output of the eigendecomposition, needs O(n^3)
-   * operations writes to error file.
-   * @return number of detected inaccuracies
-   */
-  
-  int CMAES::checkEigen(arma::vec& diag, arma::mat& Q)
-  {
-    // compute Q diag Q^T and Q Q^T to check
-    int res = 0;
-    for(int i = 0; i < N; ++i)
-      for(int j = 0; j < N; ++j) {
-        double cc = 0., dd = 0.;
-        for(int k = 0; k < N; ++k)
-        {
-          cc += diag[k]*Q(i,k)*Q(j,k);
-          dd += Q(i,k)*Q(j,k);
-        }
-        // check here, is the normalization the right one?
-        const bool cond1 = fabs(cc - C(i > j ? i : j,i > j ? j : i)) / sqrt(C(i,i)* C(j,j)) > double(1e-10);
-        const bool cond2 = fabs(cc - C(i > j ? i : j,i > j ? j : i)) > double(3e-14);
-        if(cond1 && cond2)
-        {
-          
-         std::cout << "eigen(): imprecise result detected " 
-                << std::endl;
-          ++res;
-        }
-        if(std::fabs(dd - (i == j)) > double(1e-10))
-        {
-        
-          std::cout << "eigen(): imprecise result detected (Q not orthog.)"
-                 << std::endl;
-          ++res;
-        }
-      }
-    return res;
-  }
-
   /**
    * Symmetric tridiagonal QL algorithm, iterative.
    * Computes the eigensystem from a tridiagonal matrix
@@ -729,17 +673,14 @@ void CMAES::updateEigensystem(bool force)
     const double eps(2.22e-16); // 2.0^-52.0 = 2.22e-16
 
     // shift input e
-    for(int i=0; i<N-1; i++) e[i] = e[i+1];
+    e.subvec(0, N-2) = e.subvec(1, N-1);
     e[N-1] = 0.;
 
     for(int l = 0; l < N; l++)
     {
       // find small subdiagonal element
-      double& el = e[l];
-      double& dl = d[l];
-      const double smallSDElement = std::fabs(dl) + std::fabs(el);
-      if(tst1 < smallSDElement)
-        tst1 = smallSDElement;
+      const double smallSDElement = std::fabs(d[l]) + std::fabs(e[l]);
+      if(tst1 < smallSDElement) tst1 = smallSDElement;
       const double epsTst1 = eps*tst1;
       int m = l;
       while(m < N)
@@ -752,19 +693,18 @@ void CMAES::updateEigensystem(bool force)
       if(m > l)
       {
         do {
-          double h, g = dl;
-          double& dl1r = d[l+1];
-          double p = (dl1r - g) / (double(2)*el);
+          double h, g = d[l];
+          double p = (d[l+1] - g) / (double(2)*e[l]);
           double r = myhypot(p, double(1));
 
           // compute implicit shift
           if(p < 0) r = -r;
           const double pr = p+r;
-          dl = el/pr;
-          h = g - dl;
-          const double dl1 = el*pr;
-          dl1r = dl1;
-          for(int i = l+2; i < N; i++) d[i] -= h;
+          d[l] = e[l]/pr;
+          h = g - d[l];
+          const double dl1 = e[l]*pr;
+          d[l+1] = dl1;
+          for(int i=l+2; i<N; i++) d[i] -= h;
           f += h;
 
           // implicit QL transformation.
@@ -772,7 +712,6 @@ void CMAES::updateEigensystem(bool force)
           double c(1);
           double c2(1);
           double c3(1);
-          const double el1 = e[l+1];
           double s(0);
           double s2(0);
           for(int i = m-1; i >= l; i--)
@@ -780,16 +719,14 @@ void CMAES::updateEigensystem(bool force)
             c3 = c2;
             c2 = c;
             s2 = s;
-            const double& ei = e[i];
-            g = c*ei;
+            g = c*e[i];
             h = c*p;
-            r = myhypot(p, ei);
+            r = myhypot(p, e[i]);
             e[i+1] = s*r;
-            s = ei/r;
+            s = e[i]/r;
             c = p/r;
-            const double& di = d[i];
-            p = c*di - s*g;
-            d[i+1] = h + s*(c*g + s*di);
+            p = c*d[i] - s*g;
+            d[i+1] = h + s*(c*g + s*d[i]);
 
             // accumulate transformation.
             for(int k = 0; k < N; k++)
@@ -801,13 +738,13 @@ void CMAES::updateEigensystem(bool force)
               Vki *= c; Vki -= s*h;
             }
           }
-          p = -s*s2*c3*el1*el/dl1;
-          el = s*p;
-          dl = c*p;
-        } while(std::fabs(el) > epsTst1);
+          p = -s*s2*c3*e[l+1]*e[l]/dl1;
+          e[l] = s*p;
+          d[l] = c*p;
+        } while(std::fabs(e[l]) > epsTst1);
       }
-      dl += f;
-      el = 0.0;
+      d[l] += f;
+      e[l] = 0.0;
     }
   }
 
@@ -822,48 +759,34 @@ void CMAES::updateEigensystem(bool force)
 
   void CMAES::householder(arma::mat& V, arma::vec& d, arma::vec& e)
   {
-
-    for(int j = 0; j < N; j++)
-    {
-      d[j] = V(N-1,j);
-    }
+      d = V.submat(N-1, 0, N-1, N-1).t();
 
     // Householder reduction to tridiagonal form
-
     for(int i = N - 1; i > 0; i--)
     {
       // scale to avoid under/overflow
-      double scale = 0.0;
       double h = 0.0;
-      for(int z=0; z<i; z++)
-      {
-        scale += std::fabs(d[z]);
-      }
+      double scale = arma::accu(arma::abs(d));
       if(scale == 0.0)
       {
         e[i] = d[i-1];
-        for(int j = 0; j < i; j++)
-        {
-          d[j] = V(i-1,j);
-          V(i,j)= 0.0;
-          V(j,i) = 0.0;
-        }
+          d.subvec(0, i-1) = V.submat(i-1, 0, i-1, i-1);
+          V.submat(i, 0, i, i-1).fill(0.0);
+          V.submat(0, i, i-1, i).fill(0.0); 
       }
       else
       {
         // generate Householder vector
-        for(int z=0; z<i; z++)
-        {
-          d[z] /= scale;
-          h += d[z] * d[z];
-        }
+          d.subvec(0, i-1) /= scale;
+          h = arma::accu(d.subvec(0, i-1) % d.subvec(0, i-1));
+    
         double& dim1 = d[i-1];
         double f = dim1;
         double g = f > 0 ? -std::sqrt(h) : std::sqrt(h);
         e[i] = scale*g;
         h = h - f* g;
         dim1 = f - g;
-        for(int d=0; d<i; d++) e[d] = 0.;
+        e.subvec(0, i-1).fill(0.0);
 
         // apply similarity transformation to remaining columns
         for(int j = 0; j < i; j++)
@@ -872,20 +795,22 @@ void CMAES::updateEigensystem(bool force)
           V(j,i) = f;
           double& ej = e[j];
           g = ej + V(j,j)* f;
+
           for(int k = j + 1; k <= i - 1; k++)
           {
             double& Vkj = V(k,j);
             g += Vkj*d[k];
             e[k] += Vkj*f;
           }
+
           ej = g;
         }
+
         f = 0.0;
         for(int j = 0; j < i; j++)
         {
-          double& ej = e[j];
-          ej /= h;
-          f += ej* d[j];
+          e[j] /= h;
+          f += e[j]* d[j];
         }
         double hh = f / (h + h);
         for(int j = 0; j < i; j++)
@@ -894,14 +819,13 @@ void CMAES::updateEigensystem(bool force)
         }
         for(int j = 0; j < i; j++)
         {
-          double& dj = d[j];
-          f = dj;
+          f = d[j];
           g = e[j];
           for(int k = j; k <= i - 1; k++)
           {
             V(k,j) -= f*e[k] + g*d[k];
           }
-          dj = V(i-1,j);
+          d[j] = V(i-1,j);
           V(i,j) = 0.0;
         }
       }
@@ -919,36 +843,20 @@ void CMAES::updateEigensystem(bool force)
       h = d[i+1];
       if(h != 0.0)
       {
-        for(int k = 0; k <= i; k++)
+        d.subvec(0, i) = V.submat(0 ,i+1, i, i+1) / h;
+        for(int j = 0; j <= i; j++) 
         {
-          d[k] = V(k,i+1) / h;
-        }
-        for(int j = 0; j <= i; j++) {
-          double g = 0.0;
-          for(int k = 0; k <= i; k++)
-          {
-           
-            g += V(k,i+1)* V(k,j);
-          }
-          for(int k = 0; k <= i; k++)
-          {
-            V(k,j) -= g*d[k];
-          }
+          double g = arma::accu( V.submat(0, i+1, i, i+1) % V.submat(0, j, i, j) );
+          V.submat(0, j, i, j) -= g*d.subvec(0, i);
         }
       }
-      for(int k = 0; k <= i; k++)
-      {
-        V(k,i+1) = 0.0;
-      }
+      V.submat(0, i+1, i, i+1).fill(0.0);
     }
-    for(int j = 0; j < N; j++)
-    {
-      double& Vnm1j = V(N-1,j);
-      d[j] = Vnm1j;
-      Vnm1j = 0.0;
-    }
-    V(N-1,N-1) = 1.0;
-    e[0] = 0.0;
+      d.subvec(0, N-1) = V.submat(N-1, 0,  N-1, N-1).t();
+      V.submat(N-1, 0,  N-1, N-1).fill(0.0);
+    
+     V(N-1,N-1) = 1.0;
+     e[0] = 0.0;
   }
   
 
@@ -972,22 +880,18 @@ void CMAES::updateEigensystem(bool force)
   double CMAES::update()
   {
     double diffc, difft;
-    clock_t lc = lastclock; // measure CPU in 1e-6s
-    time_t lt = lasttime; // measure time in s
-
-    assert(isstarted == 1 && "timings_started() must be called before using timings... functions");
-
-    lastclock = clock(); // measures at most 2147 seconds, where 1s = 1e6 CLOCKS_PER_SEC
+    clock_t lc = lastclock;
+    time_t lt = lasttime; 
+    lastclock = clock(); 
     lasttime = time(NULL);
-    diffc = (double) (lastclock - lc) / CLOCKS_PER_SEC; // is presumably in [-21??, 21??]
-    difft = difftime(lasttime, lt); // is presumably an integer
-    lastdiff = difft; // on the "save" side
-    // use diffc clock measurement if appropriate
-    if(diffc > 0 && difft < 1000)
-      lastdiff = diffc;
-    assert(lastdiff >= 0 && "BUG in time measurement");
+    diffc = (double) (lastclock - lc) / CLOCKS_PER_SEC; 
+    difft = difftime(lasttime, lt); 
+    lastdiff = difft; 
+    
+    if(diffc > 0 && difft < 1000) lastdiff = diffc;
     totaltime += lastdiff;
     totaltotaltime += lastdiff;
+    
     if(istic)
     {
       tictoczwischensumme += lastdiff;
@@ -998,14 +902,12 @@ void CMAES::updateEigensystem(bool force)
 
   void CMAES::tic()
   {
-    assert(!istic && "Timingic called twice without toc");
     update();
     istic = 1;
   }
 
   double CMAES::toc()
   {
-    assert(istic && "Timingoc called without tic");
     update();
     lasttictoctime = tictoczwischensumme;
     tictoczwischensumme = 0;
