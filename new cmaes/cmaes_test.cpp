@@ -46,7 +46,7 @@ int main()
 { 
 mlpack::math::RandomSeed(std::time(NULL));
   
-  for(int i=10; i<55; i += 5)
+  for(int i=2; i<20; i += 1)
   {
     rosenbrock test(i);
 
