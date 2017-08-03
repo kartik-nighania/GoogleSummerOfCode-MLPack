@@ -14,7 +14,6 @@
 #define MLPACK_CORE_OPTIMIZERS_CMAES_CMAES_IMPL_HPP
 
 #include "cmaes.hpp"
-#include "random.hpp"
 
 namespace mlpack {
 namespace optimization {
@@ -156,7 +155,6 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
   template<typename funcType>
   double CMAES::Optimize(funcType& function, arma::mat& arr)
   {
-    int funNo = function.NumFunctions();
     arFunvals.set_size(lambda);
     init(arFunvals);
 
@@ -174,12 +172,10 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     {
       x = population.submat(i, 0, i, N-1).t();
 
-    for (size_t j = 0; j < funNo; j++)
+    for (size_t j = 0; j < N; j++)
      arFunvals[i] += function.Evaluate(x, j);
     }
 
-    //for(int s=0; s<lambda; s++) std::cout << arFunvals[s] << " ";
-      //std::cout << std::endl;
     // update the search distribution used for sampleDistribution()
       updateDistribution(arFunvals);
   }
@@ -189,7 +185,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
     arr = x;
 
     double funs = 0;
-    for (size_t j = 0; j < funNo; j++)
+    for (size_t j = 0; j < N; j++)
     funs += function.Evaluate(x, j);
 
     return funs;
@@ -318,7 +314,7 @@ Log::Warn << "WARNING: initialStandardDeviations undefined."
       xmean = xstart;
 
     if (typicalXcase)
-     xmean += sigma * rgD * rand.gauss();
+     xmean += sigma * rgD * mlpack::math::RandNormal();
 
     func.subvec(0, lambda - 1) = publicFitness.subvec(0, lambda - 1);
   }
@@ -350,32 +346,26 @@ void CMAES::samplePopulation()
       }
     }
 
-   // if(rgDiffMinChange)
-    //  return;
-
-   // for(int i = 0; i < params.N; ++i)
-     // while(this->sigma*std::sqrt(this->C[i][i]) < this->params.rgDiffMinChange[i])
-       // this->sigma *= std::exp(T(0.05) + this->params.cs / this->params.damps);
- 
-for (int iNk = 0; iNk < lambda; ++iNk)
-{ // generate scaled random vector D*z
-for (int i = 0; i < N; ++i)
-if (diag)
-population(iNk, i) = xmean[i] + sigma*rgD[i]
-* rand.gauss();
-else
-tempRandom[i] = rgD[i]* rand.gauss();
-
-if (!diag)
-for (int i = 0; i < N; ++i)
-{ // add mutation sigma*B*(D*z)
-  double sum = 0.0;
-  for(int j=0; j<N; j++)
-  sum += B(i,j)*tempRandom[j];
-  population(iNk , i) = xmean[i] + sigma*sum;
-
-}
-}
+    for (int iNk = 0; iNk < lambda; ++iNk)
+    { // generate scaled random vector D*z
+      for (int i = 0; i < N; ++i)
+        if (diag)
+          population(iNk, i) = xmean[i] + sigma*rgD[i]
+          * mlpack::math::RandNormal();
+        else
+          tempRandom[i] = rgD[i]* mlpack::math::RandNormal();
+      if (!diag)
+      {
+        for (int i = 0; i < N; ++i)
+      { // add mutation sigma*B*(D*z)
+        double sum = 0.0;
+        {
+          sum = arma::dot(B.row(i), tempRandom);
+          population(iNk , i) = xmean[i] + sigma*sum;
+        }
+      }
+    }
+    }
 
     if (state == UPDATED || gen == 0)
       ++gen;
@@ -404,30 +394,27 @@ void CMAES::updateDistribution(const arma::vec& fitnessValues)
 
     // Generate index
     index = arma::sort_index(fitnessValues);
-    //static int i=0; if(i==0){i=-1; std::cout << index;}
 
     // Test if function values are identical, escape flat fitness
     if (fitnessValues[index[0]] == fitnessValues[index[(int) lambda / 2]])
     {
       sigma *= std::exp(double(0.2) + cs / damps);
 
-      std::cout << "Warning: sigma increased due to equal function values"
+      Log::Warn << "Warning: sigma increased due to equal function values"
       << std::endl << "Reconsider the formulation of the objective function";
     }
 
     // update function value history
-    for (int i = (int)funcValueHistory.size() - 2; i > 0; --i)
+    for (int i = (int)funcValueHistory.size() - 1; i > 0; --i)
       funcValueHistory[i] = funcValueHistory[i - 1];
     funcValueHistory[0] = fitnessValues[index[0]];
 
     // update xbestever
     if (xBestEver[N] > population(index[0], N) || gen == 1)
     {
-      for(int i=0; i<=N; ++i)
-      {
-      xBestEver[i] = population(index[0],i);
+      xBestEver.subvec(0, N-1) = population.submat(index[0], 0,
+      index[0], N-1).t();
       xBestEver[N+1] = countevals;
-    }
     }
 
     const double sqrtmueffdivsigma = std::sqrt(mueff) / sigma;
@@ -474,13 +461,7 @@ void CMAES::updateDistribution(const arma::vec& fitnessValues)
     }
 
     // calculate norm(ps)^2
-    // calculate norm(ps)^2
-    double psxps(0);
-    for(int i = 0; i < N; ++i)
-    {
-      const double& rgpsi = ps[i];
-      psxps += rgpsi*rgpsi;
-    }
+    double psxps = std::pow(arma::norm(ps), 2);
 
     // cumulation for covariance matrix (pc) using B*D*z~N(0,C)
     int hsig = std::sqrt(psxps) / std::sqrt(double(1)
@@ -525,11 +506,11 @@ bool CMAES::testForTermination()
     }
 
     // TolFun
-    int rangeIndex = std::min(gen, (double)funcValueHistory.size()-1);
-    range = std::max(arma::max(funcValueHistory.subvec(0, rangeIndex)),
-    arma::max(functionValues))
-    - std::min(arma::max(funcValueHistory.subvec(0, rangeIndex)),
-    arma::min(functionValues));
+    int rangeIndex = (int) std::min((int)gen, historySize-1);
+    range = std::max( arma::max(funcValueHistory.subvec(0, rangeIndex)) ,
+        functionValues.max()) -
+        std::min(arma::min(funcValueHistory.subvec(0, rangeIndex)),
+        functionValues.min());
 
     if (gen > 0 && range <= stopTolFun)
     {
@@ -539,7 +520,7 @@ bool CMAES::testForTermination()
     }
 
     // TolFunHist
-    if (gen > funcValueHistory.size()-1)
+    if (gen > funcValueHistory.size())
     {
       range = arma::max(funcValueHistory) - arma::min(funcValueHistory);
       if (range <= stopTolFunHist)
@@ -657,8 +638,8 @@ void CMAES::updateEigensystem(bool force)
         return;
     }
 
-         eigen(rgD, B, tempRandom);
-
+     if (!arma::eig_sym(rgD, B, C))
+        Log::Warn << "eigen decomposition failed in neuro_cmaes::eigen()";
 
     // find largest and smallest eigenvalue, they are
     // supposed to be sorted anyway
@@ -670,278 +651,6 @@ void CMAES::updateEigensystem(bool force)
     eigensysIsUptodate = true;
     genOfEigensysUpdate = gen;
   }
-
-  /**
-   * Calculating eigenvalues and vectors.
-   * @param rgtmp (input) N+1-dimensional vector for temporal use. 
-   * @param diag (output) N eigenvalues. 
-   * @param Q (output) Columns are normalized eigenvectors.
-   */
-  void CMAES::eigen(arma::vec& diag, arma::mat& Q, arma::vec& rgtmp)
-  {
-
-      for(int i = 0; i < N; ++i)
-        for(int j = 0; j <= i; ++j)
-          Q(i,j) = Q(j,i) = C(i,j);
-
-
-    householder(Q, diag, rgtmp);
-    ql(diag, rgtmp, Q);
-  }
-
-
-  /**
-   * Symmetric tridiagonal QL algorithm, iterative.
-   * Computes the eigensystem from a tridiagonal matrix in roughtly 3N^3 operations
-   * code adapted from Java JAMA package, function tql2.
-   * @param d input: Diagonale of tridiagonal matrix. output: eigenvalues.
-   * @param e input: [1..n-1], off-diagonal, output from Householder
-   * @param V input: matrix output of Householder. output: basis of
-   *          eigenvectors, according to d
-   */
-  void CMAES::ql(arma::vec& d, arma::vec& e, arma::mat& V)
-  {
-    const int n = N;
-    double f(0);
-    double tst1(0);
-    const double eps(2.22e-16); // 2.0^-52.0 = 2.22e-16
-
-    for(int i=0; i<n-1; i++) e[i]=e[i+1];
-      e[n-1] = 0;
-
-    for(int l = 0; l < n; l++)
-    {
-      // find small subdiagonal element
-      double& el = e[l];
-      double& dl = d[l];
-      const double smallSDElement = std::fabs(dl) + std::fabs(el);
-      if(tst1 < smallSDElement)
-        tst1 = smallSDElement;
-      const double epsTst1 = eps*tst1;
-      int m = l;
-      while(m < n)
-      {
-        if(std::fabs(e[m]) <= epsTst1) break;
-        m++;
-      }
-
-      // if m == l, d[l] is an eigenvalue, otherwise, iterate.
-      if(m > l)
-      {
-        do {
-          double h, g = dl;
-          double& dl1r = d[l+1];
-          double p = (dl1r - g) / (double(2)*el);
-          double r = myhypot(p, double(1));
-
-          // compute implicit shift
-          if(p < 0) r = -r;
-          const double pr = p+r;
-          dl = el/pr;
-          h = g - dl;
-          const double dl1 = el*pr;
-          dl1r = dl1;
-          for(int i = l+2; i < n; i++) d[i] -= h;
-          f += h;
-
-          // implicit QL transformation.
-          p = d[m];
-          double c(1);
-          double c2(1);
-          double c3(1);
-          const double el1 = e[l+1];
-          double s(0);
-          double s2(0);
-          for(int i = m-1; i >= l; i--)
-          {
-            c3 = c2;
-            c2 = c;
-            s2 = s;
-            const double& ei = e[i];
-            g = c*ei;
-            h = c*p;
-            r = myhypot(p, ei);
-            e[i+1] = s*r;
-            s = ei/r;
-            c = p/r;
-            const double& di = d[i];
-            p = c*di - s*g;
-            d[i+1] = h + s*(c*g + s*di);
-
-            // accumulate transformation.
-            for(int k = 0; k < n; k++)
-            {
-              double& Vki1 = V(k,i+1);
-              h = Vki1;
-              double& Vki = V(k,i);
-              Vki1 = s*Vki + c*h;
-              Vki *= c; Vki -= s*h;
-            }
-          }
-          p = -s*s2*c3*el1*el/dl1;
-          el = s*p;
-          dl = c*p;
-        } while(std::fabs(el) > epsTst1);
-      }
-      dl += f;
-      el = 0.0;
-    }
-  }
-
-  /**
-   * Householder transformation of a symmetric matrix V into tridiagonal form.
-   * Code slightly adapted from the Java JAMA package, function private tred2().
-   * @param V input: symmetric nxn-matrix. output: orthogonal transformation
-   *          matrix: tridiag matrix == V* V_in* V^t.
-   * @param d output: diagonal
-   * @param e output: [0..n-1], off diagonal (elements 1..n-1)
-   */
-  void CMAES::householder(arma::mat& V, arma::vec& d, arma::vec& e)
-  {
-    const int n = N;
-
-    for(int j = 0; j < n; j++)
-    {
-      d[j] = V(n-1,j);
-    }
-
-    // Householder reduction to tridiagonal form
-
-    for(int i = n - 1; i > 0; i--)
-    {
-      // scale to avoid under/overflow
-      double scale = 0.0;
-      double h = 0.0;
-      for(int z=0; z<i; z++) scale += std::fabs(d[i]);
-      if(scale == 0.0)
-      {
-        e[i] = d[i-1];
-        for(int j = 0; j < i; j++)
-        {
-          d[j] = V(i-1,j);
-          V(i,j) = 0.0;
-          V(j,i) = 0.0;
-        }
-      }
-      else
-      {
-        // generate Householder vector
-        for(int z=0; z<i; z++)
-        {
-          d[i] /= scale;
-          h += d[i] * d[i];
-        }
-
-        double& dim1 = d[i-1];
-        double f = dim1;
-        double g = f > 0 ? -std::sqrt(h) : std::sqrt(h);
-        e[i] = scale*g;
-        h = h - f* g;
-        dim1 = f - g;
-        for(int a=0; a<i; a++) e[a] = 0;
-
-        // apply similarity transformation to remaining columns
-        for(int j = 0; j < i; j++)
-        {
-          f = d[j];
-          V(j,i) = f;
-          double& ej = e[j];
-          g = ej + V(j,j)* f;
-          for(int k = j + 1; k <= i - 1; k++)
-          {
-            double& Vkj = V(k,j);
-            g += Vkj*d[k];
-            e[k] += Vkj*f;
-          }
-          ej = g;
-        }
-        f = 0.0;
-        for(int j = 0; j < i; j++)
-        {
-          double& ej = e[j];
-          ej /= h;
-          f += ej* d[j];
-        }
-        double hh = f / (h + h);
-        for(int j = 0; j < i; j++)
-        {
-          e[j] -= hh*d[j];
-        }
-        for(int j = 0; j < i; j++)
-        {
-          double& dj = d[j];
-          f = dj;
-          g = e[j];
-          for(int k = j; k <= i - 1; k++)
-          {
-            V(k,j) -= f*e[k] + g*d[k];
-          }
-          dj = V(i-1,j);
-          V(i,j) = 0.0;
-        }
-      }
-      d[i] = h;
-    }
-
-    // accumulate transformations
-    const int nm1 = n-1;
-    for(int i = 0; i < nm1; i++)
-    {
-      double h;
-      double& Vii = V(i,i);
-      V(n-1,i) = Vii;
-      Vii = 1.0;
-      h = d[i+1];
-      if(h != 0.0)
-      {
-        for(int k = 0; k <= i; k++)
-        {
-          d[k] = V(k,i+1) / h;
-        }
-        for(int j = 0; j <= i; j++) {
-          double g = 0.0;
-          for(int k = 0; k <= i; k++)
-          {
-          
-            g += V(k,i+1)* V(k,j);
-          }
-          for(int k = 0; k <= i; k++)
-          {
-            V(k,j) -= g*d[k];
-          }
-        }
-      }
-      for(int k = 0; k <= i; k++)
-      {
-        V(k,i+1) = 0.0;
-      }
-    }
-    for(int j = 0; j < n; j++)
-    {
-      double& Vnm1j = V(n-1,j);
-      d[j] = Vnm1j;
-      Vnm1j = 0.0;
-    }
-    V(n-1,n-1)= 1.0;
-    e[0] = 0.0;
-  }
-
-  double CMAES::myhypot(double a, double b)
-{
-  const register double fabsa = std::fabs(a), fabsb = std::fabs(b);
-  if(fabsa > fabsb)
-  {
-    const register double r = b / a;
-    return fabsa*std::sqrt(double(1)+r*r);
-  }
-  else if(b != double(0))
-  {
-    const register double r = a / b;
-    return fabsb*std::sqrt(double(1)+r*r);
-  }
-  else
-    return double(0);
-}
 
 } // namespace optimization
 } // namespace mlpack

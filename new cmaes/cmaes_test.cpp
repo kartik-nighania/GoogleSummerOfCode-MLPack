@@ -26,7 +26,8 @@ using namespace mlpack::optimization::test;
 
   class rosenbrock
   {
-    public:
+     public:
+    
     int N;
 
     rosenbrock(int x){ N = x-1; }
