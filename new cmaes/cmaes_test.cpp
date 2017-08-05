@@ -68,8 +68,6 @@ void BuildVanillaNetwork(MatType& trainData,
   model.Add<LogSoftMax<> >();
 
   int dim = trainData.n_rows * hiddenLayerSize +  hiddenLayerSize * outputSize +2 ;
-  arma::mat initialStdDeviations1(dim, 1); initialStdDeviations1.fill(0.3);
-
   CMAES opt(dim, 0.5, 0.3, 10000, 1e-14, 1e-14);
 
   model.Train(trainData, trainLabels, opt);
@@ -104,7 +102,7 @@ int main()
   
 mlpack::math::RandomSeed(std::time(NULL));
   
- /* for(int i=2; i<20; i += 1)
+  for(int i=2; i<20; i += 1)
   {
     rosenbrock test(i);
 
@@ -132,7 +130,7 @@ mlpack::math::RandomSeed(std::time(NULL));
   for(int i=0; i<3; i++) std::cout << coordinates1[i] << " ";
   std::cout << std::endl;
 
-/*
+
 
   arma::mat irisTrainData;
   data::Load("iris_train.csv", irisTrainData, true);
@@ -165,7 +163,7 @@ mlpack::math::RandomSeed(std::time(NULL));
 
  BuildVanillaNetwork<>
 (irisTrainData, irisTrainLabels, irisTestData, irisTestLabels, 3, 8, 70, 0.1);
-*/
+
 
  // Loop over several variants.
   for (size_t i = 10; i < 50; i += 5)
@@ -173,7 +171,7 @@ mlpack::math::RandomSeed(std::time(NULL));
     // Create the generalized Rosenbrock function.
     GeneralizedRosenbrockFunction f(i);
 
-    CMAES s(i,0.5, 0.3, 100000, 1e-16, 1e-16);
+  CMAES s(i, 0.5, 0.3, 100000, 1e-16, 1e-16);
 
     arma::mat coordinates = f.GetInitialPoint();
     double result = s.Optimize(f, coordinates);
