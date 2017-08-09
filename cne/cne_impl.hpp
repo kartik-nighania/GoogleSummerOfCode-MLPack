@@ -20,12 +20,12 @@ namespace optimization {
 
 CNE::CNE(const size_t populationSize,
          const size_t maxGeneration, 
-         const double mutationRate, 
+         const double mutationProb, 
          const double mutationSize, 
          const double selectPercent) :
          populationSize(populationSize),
          maxGeneration(maxGeneration),
-         mutationRate(mutationRate),
+         mutationProb(mutationProb),
          mutationSize(mutationSize),
          selectPercent(selectPercent)
          { }
@@ -35,48 +35,53 @@ double CNE::Optimize(
     DecomposableFunctionType& function,
     arma::mat& answer)
 {   
-	// Get the number of functions to iterate
-	size_t numFun = function.NumFunctions();
+  // Get the number of functions to iterate
+  size_t numFun = function.NumFunctions();
+
+  // Set the population size and fill random values [0,1]
+  populations.set_size(populationSize, answer.n_rows);
+  population.randu();
+
+  // initialize helper variables
+  arma::vec parameters(answer.n_rows);
+  fitnessValues.set_size(populationSize);
+  double fitness = 0;
+
+  Log::Info << "CNE initialized successfully. Optimization started " << std::endl;
+
+  // Iterate till max number of generations
+  for (size_t gen = 1; gen <= maxGeneration; gen++)
+  {   
+	// calculate fitness values of all candidates
+	for (size_t i = 0; i < populationSize; i++)
+     {
+       	// select a candidate
+       	parameters = population.row(i).t();
+       	// Insert the parameters in the function
+       	answer = parameters;
+
+       	// find the fitness
+       	for(int j = 0; j < numFun; j++)
+       		fitness += function.Evaluate(parameters, j);
+
+       	// Save fitness values
+       	fitnessValues[i] = fitness;
+       	fitness = 0;
+     }
     
-    // Set the population size and fill random values [0,1]
-    populations.set_size(populationSize, answer.n_rows);
-    population.randu();
-    
-    // initialize helper variables
-    arma::vec parameters(answer.n_rows);
-    fitnessValues.set_size(populationSize);
-    double fitness = 0;
-
-    Log::Info << "CNE initialized successfully. Optimization started " << std::endl;
-
-    // Iterate till max number of generations
-    for (size_t gen = 1; gen <= maxGeneration; gen++)
-    {   
-    	// calculate fitness values of all candidates
-    	for (size_t i = 0; i < populationSize; i++)
-         {
-           	// select a candidate
-           	parameters = population.row(i).t();
-           	// Insert the parameters in the neural network
-           	function.parameters() = parameters;
-
-           	// find the fitness
-           	for(int j = 0; j < numFun; j++)
-           		fitness += function.Evaluate(parameters, j);
-
-           	// Save fitness values
-           	fitnessValues[i] = fitness;
-           	fitness = 0;
-         }
+        Log::Info << "Generation number: " << gen << " best fitness = "
+        << fitnessValues.max() << std::endl;
         
-            Log::Info << "Generation number: " << gen << " best fitness = "
-            << fitnessValues.max() << std::endl;
-            
-            // ******************** termination criteria and then output TODO AND REMAINS
-            
-            // create the next generation of species
-            Reproduce();
-    }
+        // ******************** termination criteria and then output TODO AND REMAINS
+        // see that the answer final call is one iteration back to this.
+        
+        // create the next generation of species
+        Reproduce();
+  }
+
+  // Return the best candidate found
+  answer = population.submat(index[0], 0, index[0], populationSize-1);
+
 }
 
 CNE::Reproduce()
@@ -120,7 +125,7 @@ CNE::Cross(size_t mom, size_t dad, size_t child1, size_t child2)
   population.row(child2) = population.row(dad);
   
   // randomly alter mom and dad genome data to get two childs
-  for(size_t i = 0; i < population.n_rows; i++)
+  for(size_t i = 0; i < population.n_cols; i++)
   {
   	// select a random value from the normal distribution
     double rand = mlpack::math::RandNormal();
@@ -139,9 +144,24 @@ CNE::Cross(size_t mom, size_t dad, size_t child1, size_t child2)
   }
 }
 
+
 CNE::Mutate()
-{
-  
+{ 
+  // Mutate the whole matrix with the given rate and probability
+  // Note: The best candidate is not altered
+  for(size_t i = 1; i < populationSize; i++)
+  {
+  	for(size_t j = 0; j < population.n_cols; j++)
+  	{
+      double noise = mlpack::math::Random();
+
+      if(noise < mutationProb)
+      {
+      	double delta = mlpack::math::RandNormal(0, mutationSize);
+      	population(index[i], j) += delta;
+      }
+  	}
+  }
 }
 
 } // namespace optimization

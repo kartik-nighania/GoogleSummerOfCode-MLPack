@@ -24,7 +24,7 @@ class CNE
 
   CNE(const size_t populationSize,
       const size_t maxGeneration,
-      const double mutationRate, 
+      const double mutationProb, 
       const double mutationSize, 
       const double selectPercent);
 
@@ -40,7 +40,7 @@ class CNE
   size_t populationSize;
   size_t maxGeneration;
   double mutationSize;
-  double mutationRate;
+  double mutationProb;
   double selectPercent;
 
   arma::mat population;
