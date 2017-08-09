@@ -102,11 +102,11 @@ int main()
   
 mlpack::math::RandomSeed(std::time(NULL));
   
-  for(int i=2; i<20; i += 1)
+  for(int i=10; i<50; i += 5)
   {
     rosenbrock test(i);
 
-    CMAES s(i,0.5, 0.3, 100000, 1e-16, 1e-15);
+    CMAES s(i,0.5, 0.3, 100000, 1e-16, 1e-16);
 
   //  arma::mat coordinates(N,1);
     arma::vec coordinates(i);
@@ -130,7 +130,7 @@ mlpack::math::RandomSeed(std::time(NULL));
   for(int i=0; i<3; i++) std::cout << coordinates1[i] << " ";
   std::cout << std::endl;
 
-
+/*
 
   arma::mat irisTrainData;
   data::Load("iris_train.csv", irisTrainData, true);
@@ -182,6 +182,7 @@ mlpack::math::RandomSeed(std::time(NULL));
     cout << coordinates[j] << " " ;
     cout << endl;
 }
+*/
 
 return 0;
 }

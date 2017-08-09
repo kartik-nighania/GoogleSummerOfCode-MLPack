@@ -1,0 +1,20 @@
+get the parameters in constructor itself 
+
+copy them in global parameters of the class 
+
+make the optimizer class function optimize
+
+optimizer makes matrix of population and initializes them with random values - each row is a candidate or individual
+
+takes each row of parameter and uses the evaluate function to calculate the function values on the number of functions loop and hence determine the fitness. here this candidate is given as the parameter in optimize function
+
+check for the termination criteria if best function is obtained. epsilon value in SGD also. Print the best fitness value as we have reached an epoch * number of candidates (or for us this is one epoch as each parameter needs a full epoch)
+
+if criteria not met - according to the fitness values - delete, create and modify new population using parent (see bangs code for this)
+
+again loop to stage above evaluating every population like in SGD main loop
+
+todo later : set defaults for the constructor parameters
+
+ask marcus for the tolerence and epoch
+also it looks bad that all are mutated except the best
