@@ -104,8 +104,8 @@ class CNE
  */
 CNE(const size_t populationSize = 15,
     const size_t maxGenerations = 30,
-    const double mutationProb = 0.5, 
-    const double mutationSize = 0.5, 
+    const double mutationProb = 0.5,
+    const double mutationSize = 0.5,
     const double selectPercent = 0.4,
     const double finalValue = DBL_MAX,
     const double fitnessHist = DBL_MAX);

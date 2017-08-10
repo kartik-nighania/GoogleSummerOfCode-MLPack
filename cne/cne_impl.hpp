@@ -19,9 +19,9 @@ namespace mlpack {
 namespace optimization {
 
 CNE::CNE(const size_t populationSize,
-         const size_t maxGenerations, 
-         const double mutationProb, 
-         const double mutationSize, 
+         const size_t maxGenerations,
+         const double mutationProb,
+         const double mutationSize,
          const double selectPercent,
          const double finalValue,
          const double fitnessHist) :
@@ -38,7 +38,7 @@ template<typename DecomposableFunctionType>
 double CNE::Optimize(
     DecomposableFunctionType& function,
     arma::mat& answer)
-{   
+{
   // Get the number of functions to iterate
   size_t numFun = function.NumFunctions();
 
@@ -51,74 +51,73 @@ double CNE::Optimize(
   fitnessValues.set_size(populationSize);
   double fitness = 0;
 
-  Log::Info << "CNE initialized successfully. Optimization started " << std::endl;
+  Log::Info << "CNE initialized successfully. Optimization started "
+  << std::endl;
 
   // Iterate till max number of generations
   for (size_t gen = 1; gen <= maxGenerations; gen++)
-  {   
+  {
   // calculate fitness values of all candidates
   for (size_t i = 0; i < populationSize; i++)
      {
-        // select a candidate
-        parameters = population.row(i).t();
-        // Insert the parameters in the function
-        answer = parameters;
+       // select a candidate
+       parameters = population.row(i).t();
+       // Insert the parameters in the function
+       answer = parameters;
 
-       	// find the fitness
-       	for (int j = 0; j < numFun; j++)
-       		fitness += function.Evaluate(parameters, j);
+       // find the fitness
+       for (int j = 0; j < numFun; j++)
+       fitness += function.Evaluate(parameters, j);
 
-       	// Save fitness values
-       	fitnessValues[i] = fitness;
-       	fitness = 0;
+       // Save fitness values
+       fitnessValues[i] = fitness;
+       fitness = 0;
      }
-    
+
         Log::Info << "Generation number: " << gen << " best fitness = "
         << fitnessValues.max() << std::endl;
-        
-        // ******************** termination criteria and then output TODO AND REMAINS
+
         // see that the answer final call is one iteration back to this.
-        
+
         // create the next generation of species
         Reproduce();
   }
 
   // Set the best candidate into the network
   answer = population.submat(index[0], 0, index[0], populationSize-1);
-  
-  // find the best fitness
-   for (int j = 0; j < numFun; j++)
-       fitness += function.Evaluate(answer, j);
 
-   return fitness ;
+  // find the best fitness
+  for (int j = 0; j < numFun; j++)
+      fitness += function.Evaluate(answer, j);
+
+  return fitness;
 }
 
 CNE::Reproduce()
-{   
-  // sort fitness value. The smaller the better
+{
+  // Sort fitness value. The smaller the better
   index = arma::sort_index(fitnessValues);
 
-  //find the number of elite percentage
+  // Find the number of elite percentage
   size_t numElite = floor(selectPercent * populationSize);
-  
-  // making sure we have even number of candidates to remove and create
+
+  // Making sure we have even number of candidates to remove and create
   if ((populationSize - numElite) % 2 != 0) numElite++;
-  
+
   for (size_t i = numElite; num < populationSize-1; i++)
   {
-  	// select 2 parents from the elite group randomly [0, numElite)
-  	size_t mom = RandInt(0, numElite);
-  	size_t dad = RandInt(0, numElite);
+    // Select 2 parents from the elite group randomly [0, numElite)
+    size_t mom = RandInt(0, numElite);
+    size_t dad = RandInt(0, numElite);
 
-  	// crossover parents to create 2 childs replacing the droped out candidates
+    // Crossover parents to create 2 childs replacing the droped out candidates
     Crossover(mom, dad, i, i+1]);
   }
 
-  // mutate the weights with small noise.
+  // Mutate the weights with small noise.
   // This is done to bring change in the next generation.
   // Then look for improvement in the next generation and improve upon it iteratively.
-  Mutate();   
-
+  Mutate();
 }
 
 CNE::Crossover(size_t mom, size_t dad, size_t child1, size_t child2)
@@ -128,18 +127,18 @@ CNE::Crossover(size_t mom, size_t dad, size_t child1, size_t child2)
   dad = index[dad];
   child1 = index[child1];
   child2 = index[child2];
-  
-  // remove the cadidates and instead place the parents
+
+  // Remove the cadidates and instead place the parents
   population.row(child1) = population.row(mom);
   population.row(child2) = population.row(dad);
-  
-  // randomly alter mom and dad genome data to get two childs
+
+  // Randomly alter mom and dad genome data to get two childs
   for (size_t i = 0; i < population.n_cols; i++)
   {
-  	// select a random value from the normal distribution
+    // Select a random value from the normal distribution
     double rand = mlpack::math::RandNormal();
 
-    // use it to alter the weights of the childs
+    // Use it to alter the weights of the childs
     if (rand > 0)
     {
       population(child1, i) = population(mom, i);
@@ -155,21 +154,21 @@ CNE::Crossover(size_t mom, size_t dad, size_t child1, size_t child2)
 
 
 CNE::Mutate()
-{ 
+{
   // Mutate the whole matrix with the given rate and probability
   // Note: The best candidate is not altered
   for (size_t i = 1; i < populationSize; i++)
   {
-  	for (size_t j = 0; j < population.n_cols; j++)
-  	{
+    for (size_t j = 0; j < population.n_cols; j++)
+   {
       double noise = mlpack::math::Random();
 
       if (noise < mutationProb)
       {
-      	double delta = mlpack::math::RandNormal(0, mutationSize);
-      	population(index[i], j) += delta;
+        double delta = mlpack::math::RandNormal(0, mutationSize);
+        population(index[i], j) += delta;
       }
-  	}
+    }
   }
 }
 
