@@ -21,3 +21,12 @@ also it looks bad that all are mutated except the best
 
 problem for any function evaluation 
 network and others
+
+
+
+
+
+
+getters and setters should be that - the code can take them changing in mid way and adjust accordingly.
+
+to set the constructor termination parameters taking care of the default values
