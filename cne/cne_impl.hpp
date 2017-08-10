@@ -49,7 +49,10 @@ double CNE::Optimize(
   // initialize helper variables
   arma::vec parameters(answer.n_rows);
   fitnessValues.set_size(populationSize);
+
+  // some helper variables
   double fitness = 0;
+  double lastBestFitness;
 
   Log::Info << "CNE initialized successfully. Optimization started "
   << std::endl;
@@ -57,8 +60,8 @@ double CNE::Optimize(
   // Iterate till max number of generations
   for (size_t gen = 1; gen <= maxGenerations; gen++)
   {
-  // calculate fitness values of all candidates
-  for (size_t i = 0; i < populationSize; i++)
+    // calculate fitness values of all candidates
+    for (size_t i = 0; i < populationSize; i++)
      {
        // select a candidate
        parameters = population.row(i).t();
@@ -74,13 +77,32 @@ double CNE::Optimize(
        fitness = 0;
      }
 
-        Log::Info << "Generation number: " << gen << " best fitness = "
-        << fitnessValues.max() << std::endl;
+      Log::Info << "Generation number: " << gen << " best fitness = "
+      << (double)fitnessValues.min() << std::endl;
 
-        // see that the answer final call is one iteration back to this.
+      // create the next generation of species
+      Reproduce();
 
-        // create the next generation of species
-        Reproduce();
+      // check for termination
+      if (finalValue != DBL_MAX && finalValue <= (double)fitnessValues.min())
+        {
+          Log::Info << "Terminating. Given fitness criteria " << finalValue
+          << " < " << (double)fitnessValues.min() << std::endl;
+          break;
+        }
+
+      // check for termination
+      if (fitnessHist != DBL_MAX && gen != 1 &&
+        (lastBestFitness - (double)fitnessValues.min()) < fitnessHist)
+        {
+          Log::Info << "Terminating. Fitness History change "
+          << (lastBestFitness - (double)fitnessValues.min())
+          << " < " << fitnessHist << std::endl;
+          break;
+        }
+
+      // Store the best fitness of this generation before update
+      lastBestFitness = (double)fitnessValues.min();
   }
 
   // Set the best candidate into the network
@@ -116,7 +138,6 @@ CNE::Reproduce()
 
   // Mutate the weights with small noise.
   // This is done to bring change in the next generation.
-  // Then look for improvement in the next generation and improve upon it iteratively.
   Mutate();
 }
 
@@ -160,7 +181,7 @@ CNE::Mutate()
   for (size_t i = 1; i < populationSize; i++)
   {
     for (size_t j = 0; j < population.n_cols; j++)
-   {
+    {
       double noise = mlpack::math::Random();
 
       if (noise < mutationProb)

@@ -96,8 +96,8 @@ class CNE
  *                       is between 0 and mutationSize
  * @param selectPercent  The percentage of candidates to select to become the
  *                       the next generation
- * @param finalValue     The final value of the objective function.  
- *                       Not considered if not provided by the user.
+ * @param finalValue     The final value of the objective function for  
+ *                       termination. Not considered if not provided.
  * @param fitnessHist    Minimum change in best fitness values between two
  *                       consecutive generations should be greater than
  *                       threshold. Not considered if not provided by user.
@@ -162,7 +162,7 @@ CNE(const size_t populationSize = 15,
   //! Reproduce candidates to create the next generation
   void Reproduce();
 
-  //! Function to modify weights for the evolution of next generation 
+  //! Function to modify weights for the evolution of next generation
   void Mutate();
 
   /**
@@ -200,7 +200,7 @@ CNE(const size_t populationSize = 15,
 
   //! Probability that a weight will get mutated
   double mutationProb;
-  
+
   //! The percentage of best candidates to be select
   double selectPercent;
 
