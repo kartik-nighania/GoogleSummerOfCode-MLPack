@@ -3,7 +3,7 @@
  * @author Marcus Edel
  * @author Kartik Nighania
  *
- * Conventional Neuro-evolution
+ * Conventional Neural Evolution
  *
  * mlpack is free software; you may redistribute it and/or modify it under the
  * terms of the 3-clause BSD license.  You should have received a copy of the
@@ -32,15 +32,16 @@ CNE::CNE(const size_t populationSize,
          selectPercent(selectPercent),
          finalValue(finalValue),
          fitnessHist(fitnessHist)
-         { }
+         { /* Nothing to do here. */ }
 
+//! Optimize the function
 template<typename DecomposableFunctionType>
 double CNE::Optimize(
     DecomposableFunctionType& function,
     arma::mat& answer)
 {
   // Get the number of functions to iterate
-  size_t numFun = function.NumFunctions();
+  const size_t numFun = function.NumFunctions();
 
   // Set the population size and fill random values [0,1]
   populations.set_size(populationSize, answer.n_rows);
@@ -115,6 +116,7 @@ double CNE::Optimize(
   return fitness;
 }
 
+//! Reproduce candidates to create the next generation
 CNE::Reproduce()
 {
   // Sort fitness value. The smaller the better
@@ -141,6 +143,7 @@ CNE::Reproduce()
   Mutate();
 }
 
+//! Crossover parents to create new childs
 CNE::Crossover(size_t mom, size_t dad, size_t child1, size_t child2)
 {
   // find the index of these candidates in the population matrix
@@ -173,7 +176,7 @@ CNE::Crossover(size_t mom, size_t dad, size_t child1, size_t child2)
   }
 }
 
-
+//! Function to modify weights for the evolution of next generation
 CNE::Mutate()
 {
   // Mutate the whole matrix with the given rate and probability
