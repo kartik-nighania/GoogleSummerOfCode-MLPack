@@ -102,13 +102,13 @@ class CNE
  *                       consecutive generations should be greater than
  *                       threshold. Not considered if not provided by user.
  */
-CNE(const size_t populationSize = 15,
-    const size_t maxGenerations = 30,
-    const double mutationProb = 0.5,
-    const double mutationSize = 0.5,
-    const double selectPercent = 0.4,
-    const double finalValue = DBL_MAX,
-    const double fitnessHist = DBL_MAX);
+CNE(const size_t populationSize = 500,
+    const size_t maxGenerations = 5000,
+    const double mutationProb = 0.1,
+    const double mutationSize = 0.02,
+    const double selectPercent = 0.2,
+    const double finalValue = DBL_MIN,
+    const double fitnessHist = DBL_MIN);
 
 /**
  * Optimize the given function using CNE. The given
@@ -121,7 +121,7 @@ CNE(const size_t populationSize = 15,
  * @return Objective value of the final point.
  */
   template<typename DecomposableFunctionType>
-  double Optimize(DecomposableFunctionType& function, arma::mat& answer);
+  double Optimize(DecomposableFunctionType& function, arma::mat& iterate);
 
   //! Get the population size
   size_t PopulationSize() const { return populationSize; }
