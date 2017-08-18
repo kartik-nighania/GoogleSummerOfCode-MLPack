@@ -18,57 +18,77 @@
 namespace mlpack {
 namespace optimization {
 
-CNE::CNE(
-    const size_t populationSize,
-    const size_t maxGenerations,
-    const double mutationProb,
-    const double mutationSize,
-    const double selectPercent,
-    const double finalValue,
-    const double fitnessHist) :
+CNE::CNE(const size_t populationSize,
+         const size_t maxGenerations,
+         const double mutationProb,
+         const double mutationSize,
+         const double selectPercent,
+         const double tolerance,
+         const double objectiveChange) :
     populationSize(populationSize),
     maxGenerations(maxGenerations),
     mutationProb(mutationProb),
     mutationSize(mutationSize),
     selectPercent(selectPercent),
-    finalValue(finalValue),
-    fitnessHist(fitnessHist)
+    tolerance(tolerance),
+    objectiveChange(objectiveChange),
+    numElite(0)
 { /* Nothing to do here. */ }
 
-//! Optimize the function
+//! Optimize the function.
 template<typename DecomposableFunctionType>
-double CNE::Optimize(
-    DecomposableFunctionType& function,
-    arma::mat& iterate)
+double CNE::Optimize(DecomposableFunctionType& function, arma::mat& iterate)
 {
-  // Get the number of functions to iterate
+  // Make sure for evolution to work at least four candidates are present.
+  if (populationSize < 4)
+    throw std::logic_error("Population size should be atleast 4!");
+
+  // Find the number of elite canditates from population.
+  numElite = floor(selectPercent * populationSize);
+
+  // Making sure we have even number of candidates to remove and create.
+  if ((populationSize - numElite) % 2 != 0) numElite--;
+
+  // Terminate if two parents can not be created.
+  if (numElite < 2)
+    throw std::logic_error("Increase selection percentage.");
+
+  // Terminate if at least two childs are not possible.
+  if ((populationSize - numElite) < 2 )
+    throw std::logic_error("Increase population size.");
+
+  // Get the number of functions to iterate.
   const size_t numFun = function.NumFunctions();
 
-  // Set the population size and fill random values [0,1]
-  population = arma::randu(populationSize, iterate.n_rows);
+  // Set the population size and fill random values [0,1].
+  population = arma::randu(iterate.n_rows, populationSize);
 
-  // initialize helper variables
+  // initializing helper variables.
   fitnessValues.set_size(populationSize);
   double fitness = 0;
-  double lastBestFitness;
+  double lastBestFitness = 0;
 
   Log::Info << "CNE initialized successfully. Optimization started"
       << std::endl;
 
-  // Iterate till max number of generations
+  // Find the fitness before optimization using given iterate parameters.
+  for (size_t j = 0; j < numFun; j++)
+    lastBestFitness += function.Evaluate(iterate, j);
+
+  // Iterate until maximum number of generations is obtained.
   for (size_t gen = 1; gen <= maxGenerations; gen++)
   {
-    // calculate fitness values of all candidates
+    // Calculating fitness values of all candidates.
     for (size_t i = 0; i < populationSize; i++)
     {
-       // select a candidate and insert the parameters in the function
-       iterate = population.row(i).t();
+       // Select a candidate and insert the parameters in the function.
+       iterate = population.col(i);
 
-       // find the fitness
+       // Find fitness of candidate.
        for (size_t j = 0; j < numFun; j++)
          fitness += function.Evaluate(iterate, j);
 
-       // Save fitness values
+       // Save fitness value of the evaluated candidate.
        fitnessValues[i] = fitness;
        fitness = 0;
     }
@@ -76,121 +96,121 @@ double CNE::Optimize(
       Log::Info << "Generation number: " << gen << " best fitness = "
           << fitnessValues.min() << std::endl;
 
-      // create the next generation of species
+      // Create next generation of species.
       Reproduce();
 
-      // check for termination
-      if (finalValue != DBL_MIN && finalValue >= fitnessValues.min())
+      // Check for termination criteria.
+      if (tolerance != DBL_MIN && tolerance >= fitnessValues.min())
       {
-          Log::Info << "Terminating. Given fitness criteria " << finalValue
+          Log::Info << "Terminating. Given fitness criteria " << tolerance
               << " > " << fitnessValues.min() << std::endl;
           break;
       }
 
-      // check for termination
-      if (fitnessHist != DBL_MIN && gen != 1 &&
-        (lastBestFitness - fitnessValues.min()) < fitnessHist)
+      // Check for termination criteria.
+      if (objectiveChange != DBL_MIN &&
+        (lastBestFitness - fitnessValues.min()) < objectiveChange)
       {
           Log::Info << "Terminating. Fitness History change "
               << (lastBestFitness - fitnessValues.min())
-          << " < " << fitnessHist << std::endl;
+              << " < " << objectiveChange << std::endl;
           break;
       }
 
-      // Store the best fitness of this generation before update
+      // Store the best fitness of present generation.
       lastBestFitness = fitnessValues.min();
   }
 
-  // Set the best candidate into the network
-  iterate = population.submat(index[0], 0, index[0], iterate.n_rows - 1).t();
+  // Set the best candidate into the network parameters.
+  iterate = population.col(index(0));
 
-  // find the best fitness
+  // Find the objective function value from the best candidate found.
   for (size_t j = 0; j < numFun; j++)
-      fitness += function.Evaluate(iterate, j);
+    fitness += function.Evaluate(iterate, j);
 
   return fitness;
 }
 
-//! Reproduce candidates to create the next generation
+//! Reproduce candidates to create the next generation.
 void CNE::Reproduce()
 {
-  // Sort fitness value. The smaller the better
+  // Sort fitness values. Smaller fitness value means better performance.
   index = arma::sort_index(fitnessValues);
 
-  // Find the number of elite percentage
-  size_t numElite = floor(selectPercent * populationSize);
+  // First parent.
+  size_t mom;
 
-  // Making sure we have even number of candidates to remove and create
-  if ((populationSize - numElite) % 2 != 0) numElite++;
+  // Second parent.
+  size_t dad;
 
-  for (size_t i = numElite; i < populationSize-1; i++)
+  for (size_t i = numElite; i < populationSize - 1; i++)
   {
-    // Select 2 parents from the elite group randomly [0, numElite)
-    size_t mom = mlpack::math::RandInt(0, numElite);
-    size_t dad = mlpack::math::RandInt(0, numElite);
+    // Select 2 different parents from elite group randomly [0, numElite).
+    do {
+         mom = mlpack::math::RandInt(0, numElite);
+         dad = mlpack::math::RandInt(0, numElite);
+       } while (mom == dad);
 
-    // Crossover parents to create 2 childs replacing the droped out candidates
-    Crossover(mom, dad, i, i+1);
+    // Parents generates 2 childs replacing the droped out candidates.
+    // Also finding the index of these candidates in the population matrix.
+    Crossover(index[mom], index[dad], index[i], index[i + 1]);
   }
 
-  // Mutate the weights with small noise.
+  // Mutating the weights with small noise values.
   // This is done to bring change in the next generation.
   Mutate();
 }
 
-//! Crossover parents to create new childs
-void CNE::Crossover(size_t mom, size_t dad, size_t child1, size_t child2)
+//! Crossover parents to create new childs.
+void CNE::Crossover(const size_t mom,
+                    const size_t dad,
+                    const size_t child1,
+                    const size_t child2)
 {
-  // find the index of these candidates in the population matrix
-  mom = index[mom];
-  dad = index[dad];
-  child1 = index[child1];
-  child2 = index[child2];
-
-  // Remove the cadidates and instead place the parents
-  population.row(child1) = population.row(mom);
-  population.row(child2) = population.row(dad);
+  // Replace the cadidates with parents at their place.
+  population.col(child1) = population.col(mom);
+  population.col(child2) = population.col(dad);
 
   double rand;
-  // Randomly alter mom and dad genome data to get two childs
-  for (size_t i = 0; i < population.n_cols; i++)
+  // Randomly alter mom and dad genome weights to get two different childs.
+  for (size_t i = 0; i < population.n_rows; i++)
   {
-    // Select a random value between 0 and 1
+    // Selecting a random value between 0 and 1.
     rand = mlpack::math::Random();
 
-    // Use it to alter the weights of the childs
+    // Using it to alter the weights of the childs.
     if (rand > 0.5)
     {
-      population(child1, i) = population(mom, i);
-      population(child2, i) = population(dad, i);
+      population(i, child1) = population(i, mom);
+      population(i, child2) = population(i, dad);
     }
     else
     {
-      population(child1, i) = population(dad, i);
-      population(child2, i) = population(mom, i);
+      population(i, child1) = population(i, dad);
+      population(i, child2) = population(i, mom);
     }
   }
 }
 
-//! Function to modify weights for the evolution of next generation
+//! Modify weights with some noise for the evolution of next generation.
 void CNE::Mutate()
 {
-  // Helper variables
+  // Helper variables.
   double noise;
   double delta;
 
-  // Mutate the whole matrix with the given rate and probability
-  // Note: The best candidate is not altered
+  // Mutate the whole matrix with the given rate and probability.
+  // The best candidate is not altered.
   for (size_t i = 1; i < populationSize; i++)
   {
-    for (size_t j = 0; j < population.n_cols; j++)
+    for (size_t j = 0; j < population.n_rows; j++)
     {
       noise = mlpack::math::Random();
 
       if (noise < mutationProb)
       {
         delta = mlpack::math::RandNormal(0, mutationSize);
-        population(index[i], j) += delta;
+        population(j, index[i]) += delta;
       }
     }
   }

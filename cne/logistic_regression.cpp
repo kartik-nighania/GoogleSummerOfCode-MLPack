@@ -22,6 +22,7 @@
 #include <mlpack/methods/ann/ffn.hpp>
 
 #include "cne.hpp"
+#include <time.h>
 
 using namespace std;
 using namespace arma;
@@ -34,7 +35,8 @@ using namespace mlpack::distribution;
 using namespace mlpack::regression;
 
 int main()
-{
+{  
+  double start = clock();
 // Generate a two-Gaussian dataset.
   GaussianDistribution g1(arma::vec("1.0 1.0 1.0"), arma::eye<arma::mat>(3, 3));
   GaussianDistribution g2(arma::vec("9.0 9.0 9.0"), arma::eye<arma::mat>(3, 3));
@@ -76,8 +78,8 @@ int main()
     testData.col(i) = g2.Random();
     testResponses[i] = 1;
   }
-
-  CNE test1(50, 2000, 0.1, 0.02, 0.2, 1);
+  CNE test1(30, 500, 0.2, 0.2, 0.3, 150);
+  // CNE test1(50, 2000, 0.1, 0.02, 0.2, 1);
 
   LogisticRegression<> lr(shuffledData, shuffledResponses, test1, 0.5);
 
@@ -87,6 +89,8 @@ int main()
 
   const double testAcc = lr.ComputeAccuracy(testData, testResponses);
   cout << testAcc << " = 100.0" << endl;
+ 
+ cout << "time taken " <<  (clock() - start)/(CLOCKS_PER_SEC);
 
 return 0;
 }

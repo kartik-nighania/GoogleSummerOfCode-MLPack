@@ -89,26 +89,27 @@ class CNE
  * given function. Therefore it is highly recommended to adjust the
  * parameters according to the problem.
  *
- * @param populationSize The number of candidates in the population
+ * @param populationSize The number of candidates in the population.
+ *        This should be atleast 4 in size.
  * @param maxGenerations The maximum number of generations allowed for CNE
- * @param mutationProb   Probability that a weight will get mutated 
- * @param mutationSize   The range of mutation noise to be added. This range
- *                       is between 0 and mutationSize
- * @param selectPercent  The percentage of candidates to select to become the
- *                       the next generation
- * @param finalValue     The final value of the objective function for  
- *                       termination. Not considered if not provided.
- * @param fitnessHist    Minimum change in best fitness values between two
- *                       consecutive generations should be greater than
- *                       threshold. Not considered if not provided by user.
+ * @param mutationProb Probability that a weight will get mutated 
+ * @param mutationSize The range of mutation noise to be added. This range
+ *                     is between 0 and mutationSize
+ * @param selectPercent The percentage of candidates to select to become the
+ *                      the next generation
+ * @param tolerance The final value of the objective function for  
+ *                   termination. Not considered if not provided.
+ * @param objectiveChange Minimum change in best fitness values between two
+ *                    consecutive generations should be greater than
+ *                    threshold. Not considered if not provided by user.
  */
 CNE(const size_t populationSize = 500,
     const size_t maxGenerations = 5000,
     const double mutationProb = 0.1,
     const double mutationSize = 0.02,
     const double selectPercent = 0.2,
-    const double finalValue = DBL_MIN,
-    const double fitnessHist = DBL_MIN);
+    const double tolerance = DBL_MIN,
+    const double objectiveChange = DBL_MIN);
 
 /**
  * Optimize the given function using CNE. The given
@@ -123,54 +124,54 @@ CNE(const size_t populationSize = 500,
   template<typename DecomposableFunctionType>
   double Optimize(DecomposableFunctionType& function, arma::mat& iterate);
 
-  //! Get the population size
+  //! Get the population size.
   size_t PopulationSize() const { return populationSize; }
-  //! Modify the population size
+  //! Modify the population size.
   size_t& PopulationSize() { return populationSize; }
 
-  //! Get maximum number of generations
+  //! Get maximum number of generations.
   size_t MaxGenerations() const { return maxGenerations; }
-  //! Modify maximum number of generations
+  //! Modify maximum number of generations.
   size_t& MaxGenerations() { return maxGenerations; }
 
-  //! Get the mutation probability
+  //! Get the mutation probability.
   double MutationProbability() const { return mutationProb; }
-  //! Modify the mutation probability
+  //! Modify the mutation probability.
   double& MutationProbability() { return mutationProb; }
 
-  //! Get the mutation size
+  //! Get the mutation size.
   double MutationSize() const { return mutationSize; }
-  //! Modify the mutation size
+  //! Modify the mutation size.
   double& MutationSize() { return mutationSize; }
 
-  //! Get the selection percentage
+  //! Get the selection percentage.
   double SelectionPercentage() const { return selectPercent; }
-  //! Modify the selection percentage
+  //! Modify the selection percentage.
   double& SelectionPercentage() { return selectPercent; }
 
-  //! Get the final objective value
-  double FinalValue() const { return finalValue; }
-  //! Modify the final objective value
-  double& FinalValue() { return finalValue; }
+  //! Get the final objective value.
+  double Tolerance() const { return tolerance; }
+  //! Modify the final objective value.
+  double& Tolerance() { return tolerance; }
 
-  //! Get the change in fitness history between generations
-  double FitnessHistory() const { return fitnessHist; }
-  //! Modify the termination criteria of change in fitness value
-  double& FitnessHistory() { return fitnessHist; }
+  //! Get the change in fitness history between generations.
+  double ObjectiveChange() const { return objectiveChange; }
+  //! Modify the termination criteria of change in fitness value.
+  double& ObjectiveChange() { return objectiveChange; }
 
  private:
-  //! Reproduce candidates to create the next generation
+  //! Reproduce candidates to create the next generation.
   void Reproduce();
 
-  //! Function to modify weights for the evolution of next generation
+  //! Modify weights with some noise for the evolution of next generation.
   void Mutate();
 
   /**
    * Crossover parents and create new childs. 
    * Two parents create two new childs.
    *
-   * @param mom      First parent from the elite population
-   * @param dad      Second parent from the elite population
+   * @param mom First parent from the elite population
+   * @param dad Second parent from the elite population
    * @param dropout1 The place to delete the candidate of the present
    *                 generation and place a child over there for the
    *                 next generation
@@ -178,37 +179,43 @@ CNE(const size_t populationSize = 500,
    *                 generation and place a child over there for the
    *                 next generation
    */
-  void Crossover(size_t mom, size_t dad, size_t dropout1, size_t dropout2);
+  void Crossover(const size_t mom,
+                 const size_t dad,
+                 const size_t dropout1,
+                 const size_t dropout2);
 
-  //! Population matrix. Where each row is a candidate
+  //! Population matrix. Each column is a candidate.
   arma::mat population;
 
-  //! Vector of fintness values corresponding to each candidate
+  //! Vector of fintness values corresponding to each candidate.
   arma::vec fitnessValues;
 
-  //! Index of the sorted fitness values
+  //! Index of sorted fitness values.
   arma::uvec index;
 
-  //! The number of candidates in the population
+  //! The number of candidates in the population.
   size_t populationSize;
 
-  //! Maximum number of generations before termination criteria is met
+  //! Maximum number of generations before termination criteria is met.
   size_t maxGenerations;
 
-  //!  The range of mutation noise to be added
+  //! Number of candidates to become parent for the next generation.
+  size_t numElite;
+
+  //! The range of mutation noise to be added.
   double mutationSize;
 
-  //! Probability that a weight will get mutated
+  //! Probability that a weight will get mutated.
   double mutationProb;
 
-  //! The percentage of best candidates to be select
+  //! The percentage of best candidates to be selected for parents.
   double selectPercent;
 
-  //! The final value of the objective function
-  double finalValue;
+  //! The final value of the objective function.
+  double tolerance;
 
-  //! Minimum change in best fitness values between two generations
-  double fitnessHist;
+  //! Minimum change in best fitness values between two generations.
+  double objectiveChange;
 };
 
 } // namespace optimization
