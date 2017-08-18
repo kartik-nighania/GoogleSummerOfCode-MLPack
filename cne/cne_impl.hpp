@@ -100,7 +100,7 @@ double CNE::Optimize(DecomposableFunctionType& function, arma::mat& iterate)
       Reproduce();
 
       // Check for termination criteria.
-      if (tolerance != DBL_MIN && tolerance >= fitnessValues.min())
+      if (tolerance != -1 && tolerance >= fitnessValues.min())
       {
           Log::Info << "Terminating. Given fitness criteria " << tolerance
               << " > " << fitnessValues.min() << std::endl;
@@ -108,7 +108,7 @@ double CNE::Optimize(DecomposableFunctionType& function, arma::mat& iterate)
       }
 
       // Check for termination criteria.
-      if (objectiveChange != DBL_MIN &&
+      if (objectiveChange != -1 &&
         (lastBestFitness - fitnessValues.min()) < objectiveChange)
       {
           Log::Info << "Terminating. Fitness History change "
@@ -146,10 +146,16 @@ void CNE::Reproduce()
   for (size_t i = numElite; i < populationSize - 1; i++)
   {
     // Select 2 different parents from elite group randomly [0, numElite).
-    do {
-         mom = mlpack::math::RandInt(0, numElite);
-         dad = mlpack::math::RandInt(0, numElite);
-       } while (mom == dad);
+    mom = mlpack::math::RandInt(0, numElite);
+    dad = mlpack::math::RandInt(0, numElite);
+
+    // Making sure both parents are not the same.
+    if (mom == dad)
+    {
+      if (dad != numElite - 1) dad++;
+      else
+        dad--;
+    }
 
     // Parents generates 2 childs replacing the droped out candidates.
     // Also finding the index of these candidates in the population matrix.

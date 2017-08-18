@@ -40,7 +40,7 @@ int main()
   model.Add<Linear<> >(4, 3);
   model.Add<LogSoftMax<> >();
 
-  CNE opt(30, 200, 0.2, 0.2, 0.3);
+  CNE opt(30, 200, 0.2, 0.2, 0.3, -1, -1);
 
   model.Train(trainData, trainLabels, opt);
 
@@ -78,7 +78,7 @@ int main()
   network.Add<LogSoftMax<> >();
 
   // CNE object
-  CNE opt1(50, 5000, 0.1, 0.02, 0.2, 0.1);
+  CNE opt1(50, 5000, 0.1, 0.02, 0.2, 0.1, -1);
 
   // Training the network with CNE
   network.Train(train, labels, opt1);
@@ -138,7 +138,7 @@ int main()
     testResponses[i] = 1;
   }
 
-  CNE opt2(30, 500, 0.2, 0.2, 0.3, 100);
+  CNE opt2(30, 500, 0.2, 0.2, 0.3, 65, -1);
 
   LogisticRegression<> lr(shuffledData, shuffledResponses, opt2, 0.5);
 

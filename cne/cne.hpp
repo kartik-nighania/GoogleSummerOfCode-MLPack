@@ -91,25 +91,26 @@ class CNE
  *
  * @param populationSize The number of candidates in the population.
  *        This should be atleast 4 in size.
- * @param maxGenerations The maximum number of generations allowed for CNE
+ * @param maxGenerations The maximum number of generations allowed for CNE.
  * @param mutationProb Probability that a weight will get mutated 
  * @param mutationSize The range of mutation noise to be added. This range
  *                     is between 0 and mutationSize
  * @param selectPercent The percentage of candidates to select to become the
  *                      the next generation
  * @param tolerance The final value of the objective function for  
- *                   termination. Not considered if not provided.
+ *                  termination. If set to -1, tolerance is not considered.
  * @param objectiveChange Minimum change in best fitness values between two
- *                    consecutive generations should be greater than
- *                    threshold. Not considered if not provided by user.
+ *                        consecutive generations should be greater than
+ *                        threshold. If set to -1, objectiveChange is not
+ *                        considered.
  */
 CNE(const size_t populationSize = 500,
     const size_t maxGenerations = 5000,
     const double mutationProb = 0.1,
     const double mutationSize = 0.02,
     const double selectPercent = 0.2,
-    const double tolerance = DBL_MIN,
-    const double objectiveChange = DBL_MIN);
+    const double tolerance = 1e-5,
+    const double objectiveChange = 1e-5);
 
 /**
  * Optimize the given function using CNE. The given
