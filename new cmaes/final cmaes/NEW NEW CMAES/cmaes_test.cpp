@@ -21,6 +21,7 @@
 #include <mlpack/methods/ann/ffn.hpp>
 
 #include "cmaes.hpp"
+#include <time.h>
 
 using namespace std;
 using namespace arma;
@@ -33,156 +34,105 @@ using namespace mlpack::optimization::test;
 using namespace mlpack::distribution;
 using namespace mlpack::regression;
 
-  class rosenbrock
-  {
-     public:
-    
-    int N;
-
-    rosenbrock(int x){ N = x-1; }
-
-    double NumFunctions(){return N;}
-
-    double Evaluate(arma::mat& x, int i)
-    {
-      return 100.*pow((pow((x[i]),2)-x[i+1]),2) + pow((1.-x[i]),2);
-    }
-
-  };
-
-template<typename MatType = arma::mat>
-void BuildVanillaNetwork(MatType& trainData,
-                         MatType& trainLabels,
-                         MatType& testData,
-                         MatType& testLabels,
-                         const size_t outputSize,
-                         const size_t hiddenLayerSize,
-                         const size_t maxEpochs,
-                         const double classificationErrorThreshold)
-{
-
-  FFN<NegativeLogLikelihood<> > model;
-  model.Add<Linear<> >(trainData.n_rows, hiddenLayerSize);
-  model.Add<SigmoidLayer<> >();
-  model.Add<Linear<> >(hiddenLayerSize, outputSize);
-  model.Add<LogSoftMax<> >();
-
-  int dim = trainData.n_rows * hiddenLayerSize +  hiddenLayerSize * outputSize +2 ;
-  CMAES opt(dim, 0.5, 0.3, 10000, 1e-14, 1e-14);
-
-  model.Train(trainData, trainLabels, opt);
-
-  MatType predictionTemp;
-  model.Predict(testData, predictionTemp);
-  MatType prediction = arma::zeros<MatType>(1, predictionTemp.n_cols);
-
-  for (size_t i = 0; i < predictionTemp.n_cols; ++i)
-  {
-    prediction(i) = arma::as_scalar(arma::find(
-        arma::max(predictionTemp.col(i)) == predictionTemp.col(i), 1)) + 1;
-  }
-
-  size_t error = 0;
-  for (size_t i = 0; i < testData.n_cols; i++)
-  {
-    if (int(arma::as_scalar(prediction.col(i))) ==
-        int(arma::as_scalar(testLabels.col(i))))
-    {
-      error++;
-    }
-  }
-
-  double classificationError = 1 - double(error) / testData.n_cols;
-  cout << endl << classificationError << " <= " << classificationErrorThreshold;
-}
-
-
 int main()
 { 
+
+  double start = clock();
   
 mlpack::math::RandomSeed(std::time(NULL));
-  
-  for(int i=10; i<50; i += 5)
+
+  SGDTestFunction test1;
+
+  CMAES opt1(3, 0.5, 0.3, 10000, 1e-13, 1e-13);
+
+  arma::mat coordinates1(3, 1);
+  double result1 = opt1.Optimize(test1, coordinates1);
+
+  double end1 = clock();
+
+   // Generate a two-Gaussian dataset.
+  GaussianDistribution g1(arma::vec("1.0 1.0 1.0"), arma::eye<arma::mat>(3, 3));
+  GaussianDistribution g2(arma::vec("9.0 9.0 9.0"), arma::eye<arma::mat>(3, 3));
+
+  arma::mat data(3, 1000);
+  arma::Row<size_t> responses(1000);
+  for (size_t i = 0; i < 500; ++i)
   {
-    rosenbrock test(i);
-
-    CMAES s(i,0.5, 0.3, 100000, 1e-16, 1e-16);
-
-  //  arma::mat coordinates(N,1);
-    arma::vec coordinates(i);
-    double result = s.Optimize(test, coordinates);
-
-    cout << endl << result << endl;
-    for(int j=0; j<i; j++) std::cout << coordinates[j] << " ";
-    std::cout << std::endl;
+    data.col(i) = g1.Random();
+    responses[i] = 0;
+  }
+  for (size_t i = 500; i < 1000; ++i)
+  {
+    data.col(i) = g2.Random();
+    responses[i] = 1;
   }
 
+  // Shuffle the dataset.
+  arma::uvec indices = arma::shuffle(arma::linspace<arma::uvec>(0,
+      data.n_cols - 1, data.n_cols));
+  arma::mat shuffledData(3, 1000);
+  arma::Row<size_t> shuffledResponses(1000);
+  for (size_t i = 0; i < data.n_cols; ++i)
+  {
+    shuffledData.col(i) = data.col(indices[i]);
+    shuffledResponses[i] = responses[indices[i]];
+  }
 
-  SGDTestFunction testing;
+  // Create a test set.
+  arma::mat testData(3, 1000);
+  arma::Row<size_t> testResponses(1000);
+  for (size_t i = 0; i < 500; ++i)
+  {
+    testData.col(i) = g1.Random();
+    testResponses[i] = 0;
+  }
+  for (size_t i = 500; i < 1000; ++i)
+  {
+    testData.col(i) = g2.Random();
+    testResponses[i] = 1;
+  }
 
-  CMAES fun(3, 0.5, 0.3, 100000, 1e-16, 1e-15);
+  CMAES test2(shuffledData.n_rows + 1, 0.5, 0.3, 10000, 1e-10, 1e-10);
 
-//  arma::mat coordinates(N,1);
-  arma::vec coordinates1(3);
-  double result1 = fun.Optimize(testing, coordinates1);
+  LogisticRegression<> lr(shuffledData, shuffledResponses, test2, 0.5);
 
-  cout << endl << result1 << endl;
-  for(int i=0; i<3; i++) std::cout << coordinates1[i] << " ";
-  std::cout << std::endl;
+  // Ensure that the error is close to zero.
+  const double acc = lr.ComputeAccuracy(data, responses);
+  const double testAcc = lr.ComputeAccuracy(testData, testResponses);
 
-/*
+  double end2 = clock();
 
-  arma::mat irisTrainData;
-  data::Load("iris_train.csv", irisTrainData, true);
- 
- //normalize train data
- double minVal=0,range=1;
- for(int i=0; i<irisTrainData.n_rows; i++)
- {
-   minVal = irisTrainData.row(i).min();
-   range  = irisTrainData.row(i).max() - minVal;
-   irisTrainData.row(i) =  (irisTrainData.row(i) - minVal)/range;
- }
+  cout << result1 << endl;
+  cout << coordinates1[0] << "  " << coordinates1[1] << "  " << coordinates1[2] << endl;
 
- arma::mat irisTrainLabels;
- data::Load("iris_train_labels.csv", irisTrainLabels, true);
+  cout << endl << endl;
 
- arma::mat irisTestData;
- data::Load("iris_test.csv", irisTestData, true);
+  cout << acc << " 100.0" << endl; // 0.3% error tolerance.
+  cout << testAcc << " 100.0" << endl << endl; // 0.6% error tolerance.
 
-  //normalize test data
- for(int i=0; i<irisTestData.n_rows; i++)
- {
-  minVal = irisTestData.row(i).min();
-  range  = irisTestData.row(i).max() - minVal;
-  irisTestData.row(i) =  (irisTestData.row(i) - minVal)/range;
- }
-
-   arma::mat irisTestLabels;
-    data::Load("iris_test_labels.csv", irisTestLabels, true);
-
- BuildVanillaNetwork<>
-(irisTrainData, irisTrainLabels, irisTestData, irisTestLabels, 3, 8, 70, 0.1);
-
-
- // Loop over several variants.
-  for (size_t i = 10; i < 50; i += 5)
+    // Loop over several variants.
+  for (size_t i = 5; i < 30; i += 5)
   {
     // Create the generalized Rosenbrock function.
     GeneralizedRosenbrockFunction f(i);
 
-  CMAES s(i, 0.5, 0.3, 100000, 1e-16, 1e-16);
+    CMAES s(i, 0.5, 0.3, 100000, 1e-16, 1e-16);
 
-    arma::mat coordinates = f.GetInitialPoint();
-    double result = s.Optimize(f, coordinates);
+    arma::mat coordinates2 = f.GetInitialPoint();
+    double result2 = s.Optimize(f, coordinates2);
 
-   cout << result << " 1e-10" << endl;
-
+    cout << result2 << endl;
     for (size_t j = 0; j < i; ++j)
-    cout << coordinates[j] << " " ;
+      cout << coordinates2[j] << " ";
     cout << endl;
-}
-*/
+  }
+
+  double end3 = clock();
+
+  cout << "Total time = " << (end3 - start)/CLOCKS_PER_SEC << endl << endl;
+  cout << "SGD Time = " << (end1 - start)/CLOCKS_PER_SEC << endl;
+  cout << "log Time = " << (end2 - end1)/CLOCKS_PER_SEC << endl;
+  cout << "ROS Time = " << (end3 - end2)/CLOCKS_PER_SEC << endl;
 
 return 0;
 }

@@ -32,7 +32,8 @@ CNE::CNE(const size_t populationSize,
     selectPercent(selectPercent),
     tolerance(tolerance),
     objectiveChange(objectiveChange),
-    numElite(0)
+    numElite(0),
+    elements(0)
 { /* Nothing to do here. */ }
 
 //! Optimize the function.
@@ -61,7 +62,10 @@ double CNE::Optimize(DecomposableFunctionType& function, arma::mat& iterate)
   const size_t numFun = function.NumFunctions();
 
   // Set the population size and fill random values [0,1].
-  population = arma::randu(iterate.n_rows, populationSize);
+  population = arma::randu(iterate.n_rows, iterate.n_cols, populationSize);
+
+  // Store the number of elements in a cube slice or a matrix column.
+  elements = population.n_rows * population.n_cols;
 
   // initializing helper variables.
   fitnessValues.set_size(populationSize);
@@ -82,7 +86,7 @@ double CNE::Optimize(DecomposableFunctionType& function, arma::mat& iterate)
     for (size_t i = 0; i < populationSize; i++)
     {
        // Select a candidate and insert the parameters in the function.
-       iterate = population.col(i);
+       iterate = population.slice(i);
 
        // Find fitness of candidate.
        for (size_t j = 0; j < numFun; j++)
@@ -122,7 +126,7 @@ double CNE::Optimize(DecomposableFunctionType& function, arma::mat& iterate)
   }
 
   // Set the best candidate into the network parameters.
-  iterate = population.col(index(0));
+  iterate = population.slice(index(0));
 
   // Find the objective function value from the best candidate found.
   for (size_t j = 0; j < numFun; j++)
@@ -174,26 +178,25 @@ void CNE::Crossover(const size_t mom,
                     const size_t child2)
 {
   // Replace the cadidates with parents at their place.
-  population.col(child1) = population.col(mom);
-  population.col(child2) = population.col(dad);
+  population.slice(child1) = population.slice(mom);
+  population.slice(child2) = population.slice(dad);
 
-  double rand;
+  // Preallocate random selection vector (values between 0 and 1).
+  arma::vec selection = arma::randu(elements);
+
   // Randomly alter mom and dad genome weights to get two different childs.
-  for (size_t i = 0; i < population.n_rows; i++)
+  for (size_t i = 0; i < elements; i++)
   {
-    // Selecting a random value between 0 and 1.
-    rand = mlpack::math::Random();
-
     // Using it to alter the weights of the childs.
-    if (rand > 0.5)
+    if (selection(i) > 0.5)
     {
-      population(i, child1) = population(i, mom);
-      population(i, child2) = population(i, dad);
+      population.slice(child1)(i) = population.slice(mom)(i);
+      population.slice(child2)(i) = population.slice(dad)(i);
     }
     else
     {
-      population(i, child1) = population(i, dad);
-      population(i, child2) = population(i, mom);
+      population.slice(child1)(i) = population.slice(dad)(i);
+      population.slice(child2)(i) = population.slice(mom)(i);
     }
   }
 }
@@ -201,24 +204,13 @@ void CNE::Crossover(const size_t mom,
 //! Modify weights with some noise for the evolution of next generation.
 void CNE::Mutate()
 {
-  // Helper variables.
-  double noise;
-  double delta;
-
   // Mutate the whole matrix with the given rate and probability.
   // The best candidate is not altered.
   for (size_t i = 1; i < populationSize; i++)
   {
-    for (size_t j = 0; j < population.n_rows; j++)
-    {
-      noise = mlpack::math::Random();
-
-      if (noise < mutationProb)
-      {
-        delta = mlpack::math::RandNormal(0, mutationSize);
-        population(j, index[i]) += delta;
-      }
-    }
+    population.slice(index(i)) += (arma::randu(
+        population.n_rows, population.n_cols) < mutationProb) %
+        (mutationSize * arma::randn(population.n_rows, population.n_cols));
   }
 }
 

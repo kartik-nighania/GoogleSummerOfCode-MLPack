@@ -49,7 +49,8 @@ CMAES::CMAES(const int objectDim,
         totaltime(0),
         totaltotaltime(0),
         tictoctime(0),
-        lasttictoctime(0)
+        lasttictoctime(0),
+        flatFitness(0)
   {
     stStopFitness.flg = false;
     stStopFitness.val = -std::numeric_limits<double>::max();
@@ -248,7 +249,7 @@ CMAES::CMAES(const int objectDim,
     double trace = arma::accu(arma::pow(rgInitialStds, 2));
     sigma = std::sqrt(trace/N);
 
-    chiN = std::sqrt((double) N) * (1 - 1/(4*N) + 1/(21*N*N));
+    chiN = std::sqrt((double) N) * (1 - (double)1/(4*N) + (double)1/(21*N*N));
     eigensysIsUptodate = true;
     genOfEigensysUpdate = 0;
 
@@ -410,6 +411,9 @@ void CMAES::UpdateDistribution(arma::vec& fitnessValues)
       Log::Warn << "Warning: sigma increased due to equal function values"
       << std::endl << "Reconsider the formulation of the objective function"
       << std::endl;
+
+      flatFitness++;
+      if (flatFitness == 3) Init();
     }
 
 for (int i = (int)historySize - 1; i > 0; --i)
@@ -561,7 +565,6 @@ bool CMAES::TestForTermination()
             << "deviation recommended."
             << std::endl;
             return true;
-        break;
       }
     }
 
@@ -572,7 +575,7 @@ bool CMAES::TestForTermination()
        dMaxSignifKond << " reached. maxEW=" << maxEW <<  ",minEW="
        << minEW << ",maxdiagC=" << maxdiagC << ",mindiagC="
        << mindiagC << std::endl;
-        return true;
+       Init();
     }
 
     // Principal axis i has no effect on xmean
@@ -592,8 +595,9 @@ bool CMAES::TestForTermination()
            Log::Info << "NoEffectAxis: standard deviation 0.1*" << (fac / 0.1)
            << " in principal axis " << iAchse << " without effect"
            << std::endl;
-           return true;
-          break;
+           Init();
+
+           break;
         }
       }
     }
@@ -607,7 +611,6 @@ bool CMAES::TestForTermination()
             << (sigma*std::sqrt(C(iKoo , iKoo))) << " in coordinate " << iKoo
             << " without effect" << std::endl;
         return true;
-        break;
       }
     }
 

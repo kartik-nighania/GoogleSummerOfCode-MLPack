@@ -128,6 +128,9 @@ double Optimize(FuncType& function, arma::mat& arr);
   //! Defines the maximal condition number.
   double stopTolUpXFactor;
 
+  //! Check for large sigma increase.
+  size_t flatFitness;
+
   //! Population size. Number of samples per iteration.
   int lambda;
 
@@ -303,7 +306,6 @@ double Toc();
 
 //! @return time between last call of timings_*() and now
 double Update();
-
 };
 } // namespace optimization
 } // namespace mlpack

@@ -186,7 +186,7 @@ CNE(const size_t populationSize = 500,
                  const size_t dropout2);
 
   //! Population matrix. Each column is a candidate.
-  arma::mat population;
+  arma::cube population;
 
   //! Vector of fintness values corresponding to each candidate.
   arma::vec fitnessValues;
@@ -202,6 +202,9 @@ CNE(const size_t populationSize = 500,
 
   //! Number of candidates to become parent for the next generation.
   size_t numElite;
+
+  //! Store the number of elements in a cube slice or a matrix column.
+  size_t elements;
 
   //! The range of mutation noise to be added.
   double mutationSize;

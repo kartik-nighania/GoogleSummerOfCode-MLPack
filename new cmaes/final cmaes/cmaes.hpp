@@ -53,7 +53,7 @@ class CMAES
 * @param functionHistory check for minimum function value difference from
          the history of function values to check for flat fitness. 
 */ 
-CMAES(const size_t objectDim = 0,
+CMAES(const int objectDim = 0,
       const double start = 0,
       const double stdDivs = 0,
       const double iters = 0,
@@ -74,6 +74,7 @@ size_t const& Mu() { return mu; }
 
 //! the covariance matrix diagonal elements
 arma::mat DiagonalCovariance() const { return C.diag(); }
+
 /**
 * Optimize the given function using CMAES. The function will be given
 * as a parameter along with a armadillo matrix of vector in which
@@ -97,7 +98,7 @@ double Optimize(FuncType& function, arma::mat& arr);
   double countevals;
 
 //! Problem dimension, must stay constant.
-  size_t N;
+  int N;
 
   //! Initial search space vector.
   arma::vec xstart;
@@ -128,10 +129,10 @@ double Optimize(FuncType& function, arma::mat& arr);
   double stopTolUpXFactor;
 
   //! Population size. Number of samples per iteration.
-  size_t lambda;
+  int lambda;
 
   //! Number of individuals used to recompute the mean.
-  size_t mu;
+  int mu;
 
   //! variable used to recompute the mean.
   double mucov;
@@ -141,6 +142,9 @@ double Optimize(FuncType& function, arma::mat& arr);
 
   //! Weights used to recombinate the mean sum up to one.
   arma::vec weights;
+
+  //! Check and initialize parameters if sigma increases too much.
+  size_t flatFitness;
 
   /**
   * Damping parameter for step-size adaption, d = inifinity or 0 means adaption
@@ -181,7 +185,7 @@ double Optimize(FuncType& function, arma::mat& arr);
 
   //! History of function values.
   arma::vec funcValueHistory;
-  size_t historySize;
+  int historySize;
 
   //! Lower triangular matrix: i>=j for C[i][j].
   arma::mat C;
@@ -251,7 +255,7 @@ double Optimize(FuncType& function, arma::mat& arr);
 void UpdateEigenSystem(bool force);
 
 //! adapt the covariance matrix to the new distribution
-void AdaptC2(const size_t hsig);
+void AdaptC2(const int hsig);
 
 //! initialize all the variables used in CMAES with default values
 void Init();
@@ -302,7 +306,6 @@ double Toc();
 
 //! @return time between last call of timings_*() and now
 double Update();
-
 };
 } // namespace optimization
 } // namespace mlpack

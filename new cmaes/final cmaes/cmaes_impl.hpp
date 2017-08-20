@@ -18,12 +18,12 @@
 namespace mlpack {
 namespace optimization {
 
-CMAES::CMAES(const size_t objectDim = 0,
-      const double start = 0,
-      const double stdDivs = 0,
-      const double iters = 0,
-      const double evalEnd = 0,
-      const double functionHistory = 0)
+CMAES::CMAES(const int objectDim,
+             const double start,
+             const double stdDivs,
+             const double iters,
+             const double evalEnd,
+             const double functionHistory)
       :
         N(-1),
         stopMaxFunEvals(-1),
@@ -49,7 +49,8 @@ CMAES::CMAES(const size_t objectDim = 0,
         totaltime(0),
         totaltotaltime(0),
         tictoctime(0),
-        lasttictoctime(0)
+        lasttictoctime(0),
+        flatFitness(0)
   {
     stStopFitness.flg = false;
     stStopFitness.val = -std::numeric_limits<double>::max();
@@ -63,35 +64,38 @@ CMAES::CMAES(const size_t objectDim = 0,
     if (evalEnd != 0) stopTolFun = evalEnd;
     if (functionHistory != 0) stopTolFunHist = functionHistory;
 
-    if (start == 0)
+    double start1 = start;
+    double stdDivs1 = stdDivs;
+
+    if (start1 == 0)
     { Log::Warn << " WARNING: initial start point undefined." <<
      "Please specify if incorrect results detected."
      << "DEFAULT = 0.5...0.5." << std::endl;
-     start = 0.5;
+     start1 = 0.5;
     }
 
-    if (stdDivs == 0)
+    if (stdDivs1 == 0)
     {
      Log::Warn << "WARNING: initialStandardDeviations undefined."
      << " Please specify if incorrect results detected. DEFAULT = 0.3...0.3."
      << std::endl;
-     stdDivs = 0.3;
+     stdDivs1 = 0.3;
     }
 
     xstart.set_size(N);
-    xstart.fill(start);
+    xstart.fill(start1);
     rgInitialStds.set_size(N);
-    rgInitialStds.fill(stdDivs);
+    rgInitialStds.fill(stdDivs1);
 
     diagonalCov = 0;
 
     if (lambda < 2)
-      lambda = 4 + (size_t) (3.0*log((double) N));
+      lambda = 4 + (int) (3.0*log((double) N));
     if (mu <= 0)
       mu = lambda / 2;
 
     weights.set_size(mu);
-    for (size_t i = 0; i < mu; ++i) weights[i] = log(mu + 1.) - log(i + 1.);
+    for (int i = 0; i < mu; ++i) weights[i] = log(mu + 1.) - log(i + 1.);
 
       // normalize weights vector and set mueff
       double s1 = arma::accu(weights);
@@ -153,8 +157,24 @@ CMAES::CMAES(const size_t objectDim = 0,
   double CMAES::Optimize(FuncType& function, arma::mat& arr)
   {
     arFunvals.set_size(lambda);
-    init();
-    size_t funNo = function.NumFunctions();
+    pc.set_size(N);
+    ps.set_size(N);
+    tempRandom.set_size(N);
+    BDz.set_size(N);
+    xmean.set_size(N);
+    xold.set_size(N);
+    xBestEver.set_size(N+2);
+    rgD.set_size(N);
+    C.set_size(N, N);
+    B.set_size(N, N);
+    funcValueHistory.set_size(historySize);
+    index.set_size(lambda);
+    functionValues.set_size(lambda);
+    population.set_size(lambda, N+1);
+
+    Init();
+
+    int funNo = function.NumFunctions();
 
     arma::Col<double> x(N);
 
@@ -166,11 +186,11 @@ CMAES::CMAES(const size_t objectDim = 0,
 
       // evaluate the new search points using the given evaluate
       // function by the user
-      for (size_t i = 0; i < lambda; ++i)
+      for (int i = 0; i < lambda; ++i)
       {
        x = population.submat(i, 0, i, N-1).t();
 
-       for (size_t j = 0; j < funNo; j++)
+       for (int j = 0; j < funNo; j++)
        arFunvals[i] += function.Evaluate(x, j);
       }
 
@@ -182,13 +202,13 @@ CMAES::CMAES(const size_t objectDim = 0,
     arr = xmean;
 
     double funs = 0;
-    for (size_t j = 0; j < funNo; j++)
+    for (int j = 0; j < funNo; j++)
     funs += function.Evaluate(xmean, j);
 
     return funs;
   }
 
-  void CMAES::AdaptC2(const size_t hsig)
+  void CMAES::AdaptC2(const int hsig)
   {
     bool diag = diagonalCov == 1 || diagonalCov >= gen;
 
@@ -216,12 +236,12 @@ CMAES::CMAES(const size_t objectDim = 0,
       eigensysIsUptodate = false;
 
       // update covariance matrix
-      for (size_t i = 0; i < N; ++i)
-        for (size_t j = diag ? i : 0; j <= i; ++j)
+      for (int i = 0; i < N; ++i)
+        for (int j = diag ? i : 0; j <= i; ++j)
         {
           double& Cij = C(i, j);
           Cij = onemccov1ccovmu*Cij + ccov1 * (pc[i]*pc[j] + longFactor*Cij);
-          for (size_t k = 0; k < mu; ++k)
+          for (int k = 0; k < mu; ++k)
           { // additional rank mu update
             Cij += ccovmu*weights[k] * (population(index[k] , i) - xold[i])
                 * (population(index[k] , j) - xold[j]) / sigmasquare;
@@ -260,29 +280,15 @@ CMAES::CMAES(const size_t objectDim = 0,
     countevals = 0;
     state = INITIALIZED;
     dLastMinEWgroesserNull = double(1);
-    pc.set_size(N);
-    ps.set_size(N);
-    tempRandom.set_size(N);
-    BDz.set_size(N);
-    xmean.set_size(N);
-    xold.set_size(N);
-    xBestEver.set_size(N+2);
+
     xBestEver[N] = std::numeric_limits<double>::max();
-    rgD.set_size(N);
-    C.set_size(N, N);
-    B.set_size(N, N);
-    functionValues.set_size(lambda);
-    historySize = 10 + (size_t) ceil(3.*10.*N/lambda);
-    funcValueHistory.set_size(historySize);
-    index.set_size(lambda);
-    for (size_t i = 0; i < lambda; ++i) index[i] = i;
-    population.set_size(lambda, N+1);
+    historySize = 10 + (int) ceil(3.*10.*N/lambda);
+    for (int i = 0; i < lambda; ++i) index[i] = i;
     functionValues.fill(std::numeric_limits<double>::max());
     funcValueHistory.fill(std::numeric_limits<double>::max());
     B.zeros();
     B.diag().ones();
     C.zeros();
-
 
     rgD = rgInitialStds * std::sqrt(N / trace);
     C.diag() = rgD;
@@ -300,7 +306,7 @@ CMAES::CMAES(const size_t objectDim = 0,
 
     xmean = xold = xstart;
 
-    for (size_t i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     xmean[i] += sigma*rgD[i]*mlpack::math::RandNormal();
   }
 
@@ -340,9 +346,9 @@ void CMAES::SamplePopulation()
       }
     }
 
-      for (size_t iNk = 0; iNk < lambda; ++iNk)
+      for (int iNk = 0; iNk < lambda; ++iNk)
     { // generate scaled random vector D*z
-      for (size_t i = 0; i < N; ++i)
+      for (int i = 0; i < N; ++i)
         if (diag)
           population(iNk, i) = xmean[i] + sigma*rgD[i]
           * mlpack::math::RandNormal();
@@ -350,7 +356,7 @@ void CMAES::SamplePopulation()
           tempRandom[i] = rgD[i]* mlpack::math::RandNormal();
       if (!diag)
       {
-        for (size_t i = 0; i < N; ++i)
+        for (int i = 0; i < N; ++i)
       { // add mutation sigma*B*(D*z)
         double sum = 0.0;
         {
@@ -386,7 +392,7 @@ void CMAES::UpdateDistribution(arma::vec& fitnessValues)
      population.col(N) = functionValues = fitnessValues;
 
     // Generate index
-     size_t i, j;
+     int i, j;
     for (i = 1, index[0] = 0; i < lambda; ++i)
     {
       for (j = i; j > 0; --j)
@@ -400,23 +406,26 @@ void CMAES::UpdateDistribution(arma::vec& fitnessValues)
     }
 
     // Test if function values are identical, escape flat fitness
-    if (fitnessValues[index[0]] == fitnessValues[index[(size_t) lambda / 2]])
+    if (fitnessValues[index[0]] == fitnessValues[index[(int) lambda / 2]])
     {
       sigma *= std::exp(double(0.2) + cs / damps);
 
       Log::Warn << "Warning: sigma increased due to equal function values"
       << std::endl << "Reconsider the formulation of the objective function"
       << std::endl;
+
+      flatFitness++;
+      if (flatFitness == 3) Init();
     }
 
-for (size_t i = (size_t)historySize - 1; i > 0; --i)
+for (int i = (int)historySize - 1; i > 0; --i)
       funcValueHistory[i] = funcValueHistory[i - 1];
     funcValueHistory[0] = fitnessValues[index[0]];
 
     // update xbestever
     if (xBestEver[N] > population(index[0], N) || gen == 1)
     {
-      for (size_t i = 0; i <= N; ++i)
+      for (int i = 0; i <= N; ++i)
       {
         xBestEver[i] = population(index[0], i);
         xBestEver[N+1] = countevals;
@@ -425,17 +434,17 @@ for (size_t i = (size_t)historySize - 1; i > 0; --i)
 
     const double sqrtmueffdivsigma = std::sqrt(mueff) / sigma;
     // calculate xmean and rgBDz~N(0,C)
-    for (size_t i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       xold[i] = xmean[i];
       xmean[i] = 0.;
-      for (size_t iNk = 0; iNk < mu; ++iNk)
+      for (int iNk = 0; iNk < mu; ++iNk)
         xmean[i] += weights[iNk]*population(index[iNk], i);
       BDz[i] = sqrtmueffdivsigma*(xmean[i]-xold[i]);
     }
 
     // calculate z := D^(-1)* B^(-1)* rgBDz into rgdTmp
-    for (size_t i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       double sum;
       if (diag)
@@ -443,7 +452,7 @@ for (size_t i = (size_t)historySize - 1; i > 0; --i)
       else
       {
         sum = 0.;
-        for (size_t j = 0; j < N; ++j)
+        for (int j = 0; j < N; ++j)
           sum += B(j, i)*BDz[j];
       }
       tempRandom[i] = sum/rgD[i];
@@ -452,7 +461,7 @@ for (size_t i = (size_t)historySize - 1; i > 0; --i)
     // cumulation for sigma (ps) using B*z
     const double sqrtFactor = std::sqrt(cs*(double(2)-cs));
     const double invps = double(1)-cs;
-    for (size_t i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       double sum;
       if (diag)
@@ -460,7 +469,7 @@ for (size_t i = (size_t)historySize - 1; i > 0; --i)
       else
       {
         sum = double(0);
-        for (size_t j = 0; j < N; ++j)
+        for (int j = 0; j < N; ++j)
           sum += B(i, j)*tempRandom[j];
       }
       ps[i] = invps*ps[i] + sqrtFactor*sum;
@@ -470,12 +479,12 @@ for (size_t i = (size_t)historySize - 1; i > 0; --i)
     double psxps = std::pow(arma::norm(ps), 2);
 
     // cumulation for covariance matrix (pc) using B*D*z~N(0,C)
-    size_t hsig = std::sqrt(psxps) / std::sqrt(double(1)
+    int hsig = std::sqrt(psxps) / std::sqrt(double(1)
     - std::pow(double(1) - cs, double(2)* gen))
         / chiN < double(1.4) + double(2) / (N + 1);
     const double ccumcovinv = 1.-ccumcov;
     const double hsigFactor = hsig*std::sqrt(ccumcov*(double(2)-ccumcov));
-    for (size_t i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
       pc[i] = ccumcovinv*pc[i] + hsigFactor*BDz[i];
 
     // update of C
@@ -498,20 +507,20 @@ for (size_t i = (size_t)historySize - 1; i > 0; --i)
 bool CMAES::TestForTermination()
   {
     double range, fac;
-    size_t iAchse, iKoo;
-    size_t diag = diagonalCov == 1 || diagonalCov >= gen;
+    int iAchse, iKoo;
+    int diag = diagonalCov == 1 || diagonalCov >= gen;
 
     // function value reached
     if ((gen > 1 || state > SAMPLED) && stStopFitness.flg &&
-        functionValues[(size_t)index[0]] <= stStopFitness.val)
+        functionValues[(int)index[0]] <= stStopFitness.val)
     {
-      Log::Info << "Fitness: function value " << functionValues[(size_t)index[0]]
+      Log::Info << "Fitness: function value " << functionValues[(int)index[0]]
           << " <= stopFitness (" << stStopFitness.val << ")" << std::endl;
       return true;
     }
 
     // TolFun
-    size_t rangeIndex = (size_t) std::min((size_t)gen, historySize-1);
+    int rangeIndex = (int) std::min((int)gen, historySize-1);
     range = std::max(arma::max(funcValueHistory.subvec(0, rangeIndex)) ,
         functionValues.max()) -
         std::min(arma::min(funcValueHistory.subvec(0, rangeIndex)),
@@ -539,7 +548,7 @@ bool CMAES::TestForTermination()
     // TolX
     arma::uvec x = arma::find((sigma*arma::sqrt(C.diag())) < stopTolX);
     arma::uvec y = arma::find(sigma*pc < stopTolX);
-    size_t cTemp = x.n_rows + y.n_rows;
+    int cTemp = x.n_rows + y.n_rows;
 
     if (cTemp == 2*N)
     {
@@ -549,7 +558,7 @@ bool CMAES::TestForTermination()
     }
 
     // TolUpX
-    for (size_t i = 0; i < N; ++i)
+    for (int i = 0; i < N; ++i)
     {
       if (sigma*std::sqrt(C(i, i)) > stopTolUpXFactor*rgInitialStds[i])
       {
@@ -562,14 +571,15 @@ bool CMAES::TestForTermination()
       }
     }
 
-    // Condition of C greater than dMaxSignifKond
+    // Check condition of C greater than dMaxSignifKond.
     if (maxEW >= minEW* dMaxSignifKond)
     {
        Log::Info << "ConditionNumber: maximal condition number " <<
        dMaxSignifKond << " reached. maxEW=" << maxEW <<  ",minEW="
        << minEW << ",maxdiagC=" << maxdiagC << ",mindiagC="
-       << mindiagC << std::endl;
-        return true;
+       << mindiagC << ". Reinitializing procedure." << std::endl;
+
+       Init();
     }
 
     // Principal axis i has no effect on xmean
@@ -589,8 +599,11 @@ bool CMAES::TestForTermination()
            Log::Info << "NoEffectAxis: standard deviation 0.1*" << (fac / 0.1)
            << " in principal axis " << iAchse << " without effect"
            << std::endl;
+
+           Init();
+
            return true;
-          break;
+           break;
         }
       }
     }
@@ -676,8 +689,8 @@ void CMAES::UpdateEigenSystem(bool force)
 
   void CMAES::Eigen(arma::vec& diag, arma::mat& Q, arma::vec& rgtmp)
   {
-      for (size_t i = 0; i < N; ++i)
-        for (size_t j = 0; j <= i; ++j)
+      for (int i = 0; i < N; ++i)
+        for (int j = 0; j <= i; ++j)
           Q(i, j) = Q(j, i) = C(i, j);
 
     Householder(Q, diag, rgtmp);
@@ -702,13 +715,13 @@ void CMAES::UpdateEigenSystem(bool force)
     e.subvec(0, N-2) = e.subvec(1, N-1);
     e[N-1] = 0.;
 
-    for (size_t l = 0; l < N; l++)
+    for (int l = 0; l < N; l++)
     {
       // find small subdiagonal element
       const double smallSDElement = std::fabs(d[l]) + std::fabs(e[l]);
       if (tst1 < smallSDElement) tst1 = smallSDElement;
       const double epsTst1 = eps*tst1;
-      size_t m = l;
+      int m = l;
       while (m < N)
       {
         if (std::fabs(e[m]) <= epsTst1) break;
@@ -721,7 +734,7 @@ void CMAES::UpdateEigenSystem(bool force)
         do {
           double h, g = d[l];
           double p = (d[l+1] - g) / (double(2)*e[l]);
-          double r = myhypot(p, double(1));
+          double r = MyHypot(p, double(1));
 
           // compute implicit shift
           if (p < 0) r = -r;
@@ -730,7 +743,7 @@ void CMAES::UpdateEigenSystem(bool force)
           h = g - d[l];
           const double dl1 = e[l]*pr;
           d[l+1] = dl1;
-          for (size_t i = l+2; i < N; i++) d[i] -= h;
+          for (int i = l+2; i < N; i++) d[i] -= h;
           f += h;
 
           // implicit QL transformation.
@@ -740,7 +753,7 @@ void CMAES::UpdateEigenSystem(bool force)
           double c3(1);
           double s(0);
           double s2(0);
-          for (size_t i = m-1; i >= l; i--)
+          for (int i = m-1; i >= l; i--)
           {
             c3 = c2;
             c2 = c;
@@ -755,7 +768,7 @@ void CMAES::UpdateEigenSystem(bool force)
             d[i+1] = h + s*(c*g + s*d[i]);
 
             // accumulate transformation.
-            for (size_t k = 0; k < N; k++)
+            for (int k = 0; k < N; k++)
             {
               double& Vki1 = V(k, i+1);
               h = Vki1;
@@ -788,7 +801,7 @@ void CMAES::UpdateEigenSystem(bool force)
       d = V.submat(N-1, 0, N-1, N-1).t();
 
     // Householder reduction to tridiagonal form
-    for (size_t i = N - 1; i > 0; i--)
+    for (int i = N - 1; i > 0; i--)
     {
       // scale to avoid under/overflow
       double h = 0.0;
@@ -815,14 +828,14 @@ void CMAES::UpdateEigenSystem(bool force)
         e.subvec(0, i-1).fill(0.0);
 
         // apply similarity transformation to remaining columns
-        for (size_t j = 0; j < i; j++)
+        for (int j = 0; j < i; j++)
         {
           f = d[j];
           V(j, i) = f;
           double& ej = e[j];
           g = ej + V(j, j)* f;
 
-          for (size_t k = j + 1; k <= i - 1; k++)
+          for (int k = j + 1; k <= i - 1; k++)
           {
             double& Vkj = V(k, j);
             g += Vkj*d[k];
@@ -833,21 +846,21 @@ void CMAES::UpdateEigenSystem(bool force)
         }
 
         f = 0.0;
-        for (size_t j = 0; j < i; j++)
+        for (int j = 0; j < i; j++)
         {
           e[j] /= h;
           f += e[j]* d[j];
         }
         double hh = f / (h + h);
-        for (size_t j = 0; j < i; j++)
+        for (int j = 0; j < i; j++)
         {
           e[j] -= hh*d[j];
         }
-        for (size_t j = 0; j < i; j++)
+        for (int j = 0; j < i; j++)
         {
           f = d[j];
           g = e[j];
-          for (size_t k = j; k <= i - 1; k++)
+          for (int k = j; k <= i - 1; k++)
           {
             V(k, j) -= f*e[k] + g*d[k];
           }
@@ -859,8 +872,8 @@ void CMAES::UpdateEigenSystem(bool force)
     }
 
     // accumulate transformations
-    const size_t nm1 = N-1;
-    for (size_t i = 0; i < nm1; i++)
+    const int nm1 = N-1;
+    for (int i = 0; i < nm1; i++)
     {
       double h;
       double& Vii = V(i, i);
@@ -870,7 +883,7 @@ void CMAES::UpdateEigenSystem(bool force)
       if (h != 0.0)
       {
         d.subvec(0, i) = V.submat(0, i+1, i, i+1) / h;
-        for (size_t j = 0; j <= i; j++)
+        for (int j = 0; j <= i; j++)
         {
           double g = arma::accu(V.submat(0, i+1, i, i+1)
             % V.submat(0, j, i, j));
